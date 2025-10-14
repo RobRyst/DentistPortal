@@ -2,7 +2,7 @@ using backend.Domains.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-namespace backend.Infrastructure
+namespace backend.Infrastructure.Data
 {
     public class ApplicationDbContext : IdentityDbContext<AppUser>
     {

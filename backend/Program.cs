@@ -1,7 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using backend.Infrastructure;
+using backend.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,7 +56,7 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 });

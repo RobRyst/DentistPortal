@@ -1,11 +1,10 @@
 using backend.DTOs;
-using backend.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Domains.Entities;
 using backend.Mapper;
-
+using backend.Infrastructure.Data;
 
 [ApiController, Route("api/[controller]"), Authorize]
 public class AppointmentsController(ApplicationDbContext db) : ControllerBase
@@ -18,7 +17,7 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
             .ToListAsync())
            .Select(slot => slot.ToDto());
 
-    [HttpPost("book")]
+    [HttpPost("bookings")]
     public async Task<ActionResult<AppointmentDto>> Book([FromBody] BookAppointmentRequest dto)
     {
         bool clash = await db.Appointments.AnyAsync(appointment =>
@@ -28,7 +27,7 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
 
         if (clash) return Conflict("Time allerede booket.");
 
-        var appt = new Appointment
+        var appointment = new Appointment
         {
             UserId = User.FindFirst(c => c.Type.Contains("sub"))!.Value,
             ProviderId = dto.ProviderId,
@@ -37,25 +36,25 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
             Notes = dto.Notes
         };
 
-        db.Appointments.Add(appt);
+        db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
 
         db.Notifications.Add(new Notification
         {
-            UserId = appt.UserId,
-            Message = $"Du har fått tildelt time {appt.StartTime:u}"
+            UserId = appointment.UserId,
+            Message = $"Du har fått tildelt time {appointment.StartTime:u}"
         });
         await db.SaveChangesAsync();
 
-        return Ok(appt.ToDto());
+        return Ok(appointment.ToDto());
     }
 
-    [HttpGet("mine")]
+    [HttpGet("my-appointments")]
     public async Task<IEnumerable<AppointmentSummaryDto>> MyAppointments()
     {
         var uid = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        return (await db.Appointments.Where(a => a.UserId == uid)
-            .OrderByDescending(a => a.StartTime).ToListAsync())
-            .Select(a => a.ToSummary());
+        return (await db.Appointments.Where(appointment => appointment.UserId == uid)
+            .OrderByDescending(appointment => appointment.StartTime).ToListAsync())
+            .Select(appointment => appointment.ToSummary());
     }
 }
