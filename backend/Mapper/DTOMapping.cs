@@ -5,64 +5,64 @@ namespace backend.Mapper
 {
     public static class DtoMapping
     {
-        public static AvailabilitySlotDto ToDto(this AvailabilitySlot s) => new()
+        public static AvailabilitySlotDto ToDto(this AvailabilitySlot slot) => new()
         {
-            Id = s.Id,
-            ProviderId = s.ProviderId,
-            StartTime = s.StartTime,
-            EndTime = s.EndTime
+            Id = slot.Id,
+            ProviderId = slot.ProviderId,
+            StartTime = slot.StartTime,
+            EndTime = slot.EndTime
         };
 
-        public static AvailabilitySlot ToEntity(this CreateAvailabilitySlotRequest dto) => new()
+        public static AvailabilitySlot ToEntity(this CreateAvailabilitySlotRequest slotDto) => new()
         {
-            ProviderId = dto.ProviderId,
-            StartTime = dto.StartTime,
-            EndTime = dto.EndTime
+            ProviderId = slotDto.ProviderId,
+            StartTime = slotDto.StartTime,
+            EndTime = slotDto.EndTime
         };
 
-        public static AppointmentDto ToDto(this Appointment a) => new()
+        public static AppointmentDto ToDto(this Appointment appointment) => new()
         {
-            Id = a.Id,
-            ProviderId = a.ProviderId,
-            StartTime = a.StartTime,
-            EndTime = a.EndTime,
-            Status = a.Status.ToString(),
-            Notes = a.Notes
+            Id = appointment.Id,
+            ProviderId = appointment.ProviderId,
+            StartTime = appointment.StartTime,
+            EndTime = appointment.EndTime,
+            Status = appointment.Status.ToString(),
+            Notes = appointment.Notes
         };
 
-        public static AppointmentSummaryDto ToSummary(this Appointment a) => new()
+        public static AppointmentSummaryDto ToSummary(this Appointment appointment) => new()
         {
-            Id = a.Id,
-            StartTime = a.StartTime,
-            EndTime = a.EndTime,
-            Status = a.Status.ToString()
+            Id = appointment.Id,
+            StartTime = appointment.StartTime,
+            EndTime = appointment.EndTime,
+            Status = appointment.Status.ToString()
         };
 
-        public static NotificationDto ToDto(this Notification n) => new()
+        public static NotificationDto ToDto(this Notification notification) => new()
         {
-            Id = n.Id,
-            Message = n.Message,
-            IsRead = n.IsRead,
-            CreatedTime = n.CreatedTime
+            Id = notification.Id,
+            Message = notification.Message,
+            IsRead = notification.IsRead,
+            CreatedTime = notification.CreatedTime
         };
 
-        public static IssueItemDto ToDto(this IssueItem f) => new()
+        public static IssueItemDto ToDto(this IssueItem issue) => new()
         {
-            Id = f.Id,
-            Issue = f.Issue,
-            Answer = f.Answer
+            Id = issue.Id,
+            Issue = issue.Issue,
+            Answer = issue.Answer
         };
 
-        public static IssueItem ToEntity(this CreateIssueItemRequest dto) => new()
+        public static IssueItem ToEntity(this CreateIssueItemRequest issueDto) => new()
         {
-            Issue = dto.Issue,
-            Answer = dto.Answer
+            Issue = issueDto.Issue,
+            Answer = issueDto.Answer
         };
 
-        public static void Apply(this IssueItem entity, UpdateIssueItemRequest dto)
+        public static void Apply(this IssueItem entity, UpdateIssueItemRequest issueDto)
         {
-            entity.Issue = dto.Issue;
-            entity.Answer = dto.Answer;
+            entity.Issue = issueDto.Issue;
+            entity.Answer = issueDto.Answer;
         }
     }
 }
