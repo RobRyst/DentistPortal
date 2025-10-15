@@ -57,4 +57,39 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
             .OrderByDescending(appointment => appointment.StartTime).ToListAsync())
             .Select(appointment => appointment.ToSummary());
     }
+    [HttpPost("{id}/cancel")]
+    [Authorize(Roles = "Admin,Provider")] // OR [Authorize(Policy="ManageAppointments")]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var appt = await db.Appointments.FindAsync(id);
+        if (appt is null) return NotFound();
+        appt.Status = AppointmentStatus.Cancelled;
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+
+    public class UpdateAppointmentRequest
+    {
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string? Notes { get; set; }
+    }
+
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Provider")]
+    public async Task<ActionResult<AppointmentDto>> Update(int id, [FromBody] UpdateAppointmentRequest dto)
+    {
+        var appt = await db.Appointments.FindAsync(id);
+        if (appt is null) return NotFound();
+
+        appt.StartTime = dto.StartTime;
+        appt.EndTime = dto.EndTime;
+        appt.Notes = dto.Notes ?? appt.Notes;
+
+        await db.SaveChangesAsync();
+        return Ok(appt.ToDto());
+    }
+
 }

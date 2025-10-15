@@ -7,22 +7,25 @@ namespace backend.Services
 {
     public class TokenService
     {
-        private readonly IConfiguration _cfg;
-        public TokenService(IConfiguration cfg) => _cfg = cfg;
+        private readonly IConfiguration _config;
+        public TokenService(IConfiguration config) => _config = config;
 
-        public string Create(string userId, string? email)
+        public string Create(string userId, string? email, IEnumerable<string>? roles = null)
         {
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
                 new Claim(JwtRegisteredClaimNames.Email, email ?? "")
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_cfg["Jwt:Key"]!));
+            if (roles != null)
+                claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _cfg["Jwt:Issuer"],
+                issuer: _config["Jwt:Issuer"],
                 audience: null,
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(8),

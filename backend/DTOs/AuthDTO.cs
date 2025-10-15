@@ -7,8 +7,11 @@ namespace backend.DTOs
         [Required, EmailAddress] public string Email { get; set; } = "";
         [Required, MinLength(6)] public string Password { get; set; } = "";
         public string? FirstName { get; set; }
-        public string? LastName { get; set; }
+        public string? LastName  { get; set; }
+
+        [Phone] public string? PhoneNumber { get; set; }
     }
+}
 
     public class LoginRequest
     {
@@ -24,5 +27,5 @@ namespace backend.DTOs
         [Required, StringLength(6, MinimumLength = 6)] public string Code { get; set; } = "";
     }
 
-    public class AuthTokenResponse { public string Token { get; set; } = ""; }
-}
+public class AuthTokenResponse { public string Token { get; set; } = ""; }
+
