@@ -17,15 +17,15 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<AppUserDto>> Me()
     {
         var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        var u = await _users.FindByIdAsync(id);
-        if (u is null) return NotFound();
+        var user = await _users.FindByIdAsync(id);
+        if (user is null) return NotFound();
 
-        var roles = await _users.GetRolesAsync(u);
+        var roles = await _users.GetRolesAsync(user);
         return new AppUserDto
         {
-            Id = u.Id, Email = u.Email,
-            FirstName = u.FirstName, LastName = u.LastName,
-            PhoneNumber = u.PhoneNumber, Address = u.Address,
+            Id = user.Id, Email = user.Email,
+            FirstName = user.FirstName, LastName = user.LastName,
+            PhoneNumber = user.PhoneNumber, Address = user.Address,
             Roles = roles.ToArray()
         };
     }
@@ -34,15 +34,15 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateMe([FromBody] UpdateAppUserRequest dto)
     {
         var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        var u = await _users.FindByIdAsync(id);
-        if (u is null) return NotFound();
+        var user = await _users.FindByIdAsync(id);
+        if (user is null) return NotFound();
 
-        u.FirstName = dto.FirstName ?? u.FirstName;
-        u.LastName  = dto.LastName  ?? u.LastName;
-        u.PhoneNumber = dto.PhoneNumber ?? u.PhoneNumber;
-        u.Address   = dto.Address   ?? u.Address;
+        user.FirstName = dto.FirstName ?? user.FirstName;
+        user.LastName  = dto.LastName  ?? user.LastName;
+        user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
+        user.Address   = dto.Address   ?? user.Address;
 
-        var result = await _users.UpdateAsync(u);
+        var result = await _users.UpdateAsync(user);
         if (!result.Succeeded) return BadRequest(result.Errors);
         return NoContent();
     }
@@ -55,10 +55,10 @@ public class UsersController : ControllerBase
         if (!allowed.Contains(dto.Role))
             return BadRequest("You can only assign roles: Provider or Patient.");
 
-        var u = await _users.FindByIdAsync(dto.UserId);
-        if (u is null) return NotFound("User not found.");
+        var user = await _users.FindByIdAsync(dto.UserId);
+        if (user is null) return NotFound("User not found.");
 
-        await _users.AddToRoleAsync(u, dto.Role);
+        await _users.AddToRoleAsync(user, dto.Role);
         return Ok();
     }
 }

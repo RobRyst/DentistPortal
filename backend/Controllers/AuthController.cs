@@ -1,4 +1,3 @@
-// backend/Controllers/AuthController.cs
 using backend.Domains.Entities;
 using backend.DTOs;
 using backend.Services;

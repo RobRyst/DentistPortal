@@ -52,18 +52,18 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
     [HttpGet("my-appointments")]
     public async Task<IEnumerable<AppointmentSummaryDto>> MyAppointments()
     {
-        var uid = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        return (await db.Appointments.Where(appointment => appointment.UserId == uid)
+        var userId = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
+        return (await db.Appointments.Where(appointment => appointment.UserId == userId)
             .OrderByDescending(appointment => appointment.StartTime).ToListAsync())
             .Select(appointment => appointment.ToSummary());
     }
     [HttpPost("{id}/cancel")]
-    [Authorize(Roles = "Admin,Provider")] // OR [Authorize(Policy="ManageAppointments")]
+    [Authorize(Roles = "Admin,Provider")]
     public async Task<IActionResult> Cancel(int id)
     {
-        var appt = await db.Appointments.FindAsync(id);
-        if (appt is null) return NotFound();
-        appt.Status = AppointmentStatus.Cancelled;
+        var appointment = await db.Appointments.FindAsync(id);
+        if (appointment is null) return NotFound();
+        appointment.Status = AppointmentStatus.Cancelled;
         await db.SaveChangesAsync();
         return NoContent();
     }
@@ -81,15 +81,15 @@ public class AppointmentsController(ApplicationDbContext db) : ControllerBase
     [Authorize(Roles = "Admin,Provider")]
     public async Task<ActionResult<AppointmentDto>> Update(int id, [FromBody] UpdateAppointmentRequest dto)
     {
-        var appt = await db.Appointments.FindAsync(id);
-        if (appt is null) return NotFound();
+        var appointment = await db.Appointments.FindAsync(id);
+        if (appointment is null) return NotFound();
 
-        appt.StartTime = dto.StartTime;
-        appt.EndTime = dto.EndTime;
-        appt.Notes = dto.Notes ?? appt.Notes;
+        appointment.StartTime = dto.StartTime;
+        appointment.EndTime = dto.EndTime;
+        appointment.Notes = dto.Notes ?? appointment.Notes;
 
         await db.SaveChangesAsync();
-        return Ok(appt.ToDto());
+        return Ok(appointment.ToDto());
     }
 
 }
