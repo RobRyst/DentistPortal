@@ -4,61 +4,65 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-[Authorize]
-public class UsersController : ControllerBase
+namespace backend.Controllers.Auth
 {
-    private readonly UserManager<AppUser> _users;
-
-    public UsersController(UserManager<AppUser> users) => _users = users;
-
-    [HttpGet("me")]
-    public async Task<ActionResult<AppUserDto>> Me()
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class UsersController(UserManager<AppUser> users) : ControllerBase
     {
-        var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        var user = await _users.FindByIdAsync(id);
-        if (user is null) return NotFound();
+        private readonly UserManager<AppUser> _users = users;
 
-        var roles = await _users.GetRolesAsync(user);
-        return new AppUserDto
+        [HttpGet("me")]
+        public async Task<ActionResult<AppUserDto>> Me()
         {
-            Id = user.Id, Email = user.Email,
-            FirstName = user.FirstName, LastName = user.LastName,
-            PhoneNumber = user.PhoneNumber, Address = user.Address,
-            Roles = roles.ToArray()
-        };
-    }
+            var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
+            var user = await _users.FindByIdAsync(id);
+            if (user is null) return NotFound();
 
-    [HttpPut("me")]
-    public async Task<IActionResult> UpdateMe([FromBody] UpdateAppUserRequest dto)
-    {
-        var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
-        var user = await _users.FindByIdAsync(id);
-        if (user is null) return NotFound();
+            var roles = await _users.GetRolesAsync(user);
+            return new AppUserDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                Address = user.Address,
+                Roles = roles.ToArray()
+            };
+        }
 
-        user.FirstName = dto.FirstName ?? user.FirstName;
-        user.LastName  = dto.LastName  ?? user.LastName;
-        user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
-        user.Address   = dto.Address   ?? user.Address;
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateMe([FromBody] UpdateAppUserRequest dto)
+        {
+            var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
+            var user = await _users.FindByIdAsync(id);
+            if (user is null) return NotFound();
 
-        var result = await _users.UpdateAsync(user);
-        if (!result.Succeeded) return BadRequest(result.Errors);
-        return NoContent();
-    }
+            user.FirstName = dto.FirstName ?? user.FirstName;
+            user.LastName = dto.LastName ?? user.LastName;
+            user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
+            user.Address = dto.Address ?? user.Address;
 
-    [HttpPost("assign-role")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest dto)
-    {
-        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Provider", "Patient" };
-        if (!allowed.Contains(dto.Role))
-            return BadRequest("You can only assign roles: Provider or Patient.");
+            var result = await _users.UpdateAsync(user);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+            return NoContent();
+        }
 
-        var user = await _users.FindByIdAsync(dto.UserId);
-        if (user is null) return NotFound("User not found.");
+        [HttpPost("assign-role")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest dto)
+        {
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Provider", "Patient" };
+            if (!allowed.Contains(dto.Role))
+                return BadRequest("You can only assign roles: Provider or Patient.");
 
-        await _users.AddToRoleAsync(user, dto.Role);
-        return Ok();
+            var user = await _users.FindByIdAsync(dto.UserId);
+            if (user is null) return NotFound("User not found.");
+
+            await _users.AddToRoleAsync(user, dto.Role);
+            return Ok();
+        }
     }
 }

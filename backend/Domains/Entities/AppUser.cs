@@ -1,4 +1,3 @@
-using System.Net.Sockets;
 using Microsoft.AspNetCore.Identity;
 
 namespace backend.Domains.Entities

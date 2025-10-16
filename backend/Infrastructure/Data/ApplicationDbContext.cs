@@ -4,10 +4,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<AppUser>
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<AppUser>(options)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-
         public DbSet<Appointment> Appointments => Set<Appointment>();
         public DbSet<AvailabilitySlot> AvailabilitySlots => Set<AvailabilitySlot>();
         public DbSet<Notification> Notifications => Set<Notification>();

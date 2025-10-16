@@ -7,23 +7,21 @@ using backend.Infrastructure.Data;
 using backend.Domains.Entities;
 using backend.Services;
 using Microsoft.AspNetCore.Identity;
-using backend.Services.Email;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using backend.Domains.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ------------------ EF Core ------------------
-var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+var connection = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(cs, ServerVersion.AutoDetect(cs)));
+    options.UseMySql(connection, ServerVersion.AutoDetect(connection)));
 
 // ------------------ Identity ------------------
-builder.Services.AddIdentityCore<AppUser>(opt =>
+builder.Services.AddIdentityCore<AppUser>(options =>
 {
-    opt.User.RequireUniqueEmail = true;
-    opt.Password.RequireNonAlphanumeric = false;
+    options.User.RequireUniqueEmail = true;
+    options.Password.RequireNonAlphanumeric = false;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -55,11 +53,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 
 // ------------------ Mailtrap (Email) ------------------
-builder.Services.Configure<MailtrapOptions>(builder.Configuration.GetSection("Mailtrap"));
-builder.Services.AddHttpClient<IMailSender, EmailService>(client =>
-{
-    client.BaseAddress = new Uri("https://send.api.mailtrap.io");
-});
+builder.Services.Configure<MailTrapOptions>(builder.Configuration.GetSection("MailtrapSmtp"));
+builder.Services.AddScoped<IMailSender, EmailService>();
 
 // ------------------ CORS ------------------
 builder.Services.AddCors(options =>
@@ -80,7 +75,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Seed roles
+// ------------------ Seed roles ------------------
 using (var scope = app.Services.CreateScope())
 {
     var roles = new[] { "Admin", "Provider", "Patient" };

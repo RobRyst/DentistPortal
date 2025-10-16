@@ -1,39 +1,36 @@
-using System.Text;
-using System.Text.Json;
+using System.Net;
 using backend.Domains.Interfaces;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
+using MimeKit;
 
-namespace backend.Services.Email
+namespace backend.Services
 {
-    public class EmailService(HttpClient http, IOptions<MailtrapOptions> opt, ILogger<EmailService> logger) : IMailSender
+    public class EmailService(IOptions<MailTrapOptions> options, ILogger<EmailService> log) : IMailSender
     {
-        private readonly HttpClient _http = http;
-        private readonly MailtrapOptions _options = opt.Value;
-        private readonly ILogger<EmailService> _logger = logger;
+        private readonly MailTrapOptions _options = options.Value;
+        private readonly ILogger<EmailService> _log = log;
 
         public async Task SendAsync(string toEmail, string subject, string text, string? html = null)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, "/api/send");
-            req.Headers.Add("Api-Token", _options.ApiToken);
+            var msg = new MimeMessage();
+            msg.From.Add(new MailboxAddress(_options.FromName, _options.FromEmail));
+            msg.To.Add(MailboxAddress.Parse(toEmail));
+            msg.Subject = subject;
 
-            var payload = new
+            var body = new BodyBuilder
             {
-                from = new { email = _options.FromEmail, name = _options.FromName },
-                to = new[] { new { email = toEmail } },
-                subject,
-                text,
-                html = html ?? $"<p>{System.Net.WebUtility.HtmlEncode(text)}</p>"
+                TextBody = text,
+                HtmlBody = html ?? $"<p>{WebUtility.HtmlEncode(text)}</p>"
             };
+            msg.Body = body.ToMessageBody();
 
-            req.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            var resp = await _http.SendAsync(req);
-
-            if (!resp.IsSuccessStatusCode)
-            {
-                var body = await resp.Content.ReadAsStringAsync();
-                _logger.LogError("Mailtrap send failed: {Status} {Body}", resp.StatusCode, body);
-                throw new InvalidOperationException($"Mail send failed ({(int)resp.StatusCode}).");
-            }
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.StartTls);
+            await smtp.AuthenticateAsync(_options.User, _options.Password);
+            await smtp.SendAsync(msg);
+            await smtp.DisconnectAsync(true);
         }
     }
 }

@@ -5,10 +5,9 @@ using System.Text;
 
 namespace backend.Services
 {
-    public class TokenService
+    public class TokenService(IConfiguration config)
     {
-        private readonly IConfiguration _config;
-        public TokenService(IConfiguration config) => _config = config;
+        private readonly IConfiguration _config = config;
 
         public string Create(string userId, string? email, IEnumerable<string>? roles = null)
         {
