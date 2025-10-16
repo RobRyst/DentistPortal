@@ -35,5 +35,10 @@ export default function DashboardPage() {
   }, [nav]);
 
   if (allowed === null) return null;
-  return <div>Admin / Provider dashboard</div>;
+  return (
+    <div>
+      Admin / Provider dashboard
+      <script src="https://www.noupe.com/embed/0199e9614c507f129e417decb705b0c02814.js"></script>
+    </div>
+  );
 }

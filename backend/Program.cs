@@ -1,12 +1,16 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using backend.Infrastructure.Data;
 using backend.Domains.Entities;
 using backend.Services;
 using Microsoft.AspNetCore.Identity;
+using backend.Services.Email;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using backend.Domains.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +41,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
@@ -46,6 +53,13 @@ builder.Services.AddAuthorization();
 
 // ------------------ App services ------------------
 builder.Services.AddScoped<TokenService>();
+
+// ------------------ Mailtrap (Email) ------------------
+builder.Services.Configure<MailtrapOptions>(builder.Configuration.GetSection("Mailtrap"));
+builder.Services.AddHttpClient<IMailSender, EmailService>(client =>
+{
+    client.BaseAddress = new Uri("https://send.api.mailtrap.io");
+});
 
 // ------------------ CORS ------------------
 builder.Services.AddCors(options =>
@@ -65,6 +79,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Seed roles
 using (var scope = app.Services.CreateScope())
 {
     var roles = new[] { "Admin", "Provider", "Patient" };

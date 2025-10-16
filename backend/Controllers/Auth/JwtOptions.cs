@@ -1,4 +1,4 @@
-namespace backend.Auth
+namespace backend.Controllers.Auth
 {
     public sealed class JwtOptions
     {
