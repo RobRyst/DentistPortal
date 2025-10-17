@@ -1,6 +1,6 @@
 namespace backend.Domains.Interfaces
 {
-    public interface IMailSender
+    public interface IEmailSender
     {
         Task SendAsync(string toEmail, string subject, string text, string? html = null);
     }

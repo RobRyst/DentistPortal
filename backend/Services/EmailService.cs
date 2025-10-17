@@ -7,7 +7,7 @@ using MimeKit;
 
 namespace backend.Services
 {
-    public class EmailService(IOptions<MailTrapOptions> options, ILogger<EmailService> log) : IMailSender
+    public class EmailService(IOptions<MailTrapOptions> options, ILogger<EmailService> log) : IEmailSender
     {
         private readonly MailTrapOptions _options = options.Value;
         private readonly ILogger<EmailService> _log = log;

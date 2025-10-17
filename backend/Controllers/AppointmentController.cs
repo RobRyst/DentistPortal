@@ -17,12 +17,12 @@ namespace backend.Controllers.Auth
     [Authorize]
     public class AppointmentController(
         ApplicationDbContext db,
-        IMailSender mail,
+        IEmailSender mail,
         UserManager<AppUser> users,
         ILogger<AppointmentController> log) : ControllerBase
     {
         private readonly ApplicationDbContext _db = db;
-        private readonly IMailSender _mail = mail;
+        private readonly IEmailSender _mail = mail;
         private readonly UserManager<AppUser> _users = users;
         private readonly ILogger<AppointmentController> _log = log;
 
