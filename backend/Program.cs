@@ -62,6 +62,22 @@ builder.Services.AddHttpContextAccessor();
 // ------------------ Mailtrap (Email via SMTP) ------------------
 builder.Services.Configure<MailTrapOptions>(builder.Configuration.GetSection("MailtrapSmtp"));
 builder.Services.AddScoped<IEmailSender, EmailService>();
+builder.Services.Configure<TwilioOptions>(builder.Configuration.GetSection("Twilio"));
+
+bool twilioConfigured =
+    !string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AccountSid"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AuthToken"])  &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["Twilio:FromNumber"]);
+
+if (twilioConfigured)
+{
+    builder.Services.AddHttpClient<ITextMessageService, TextMessageService>();
+}
+else
+{
+    builder.Services.AddSingleton<ITextMessageService, DevSmsSender>();
+}
+
 
 // ------------------ CORS ------------------
 builder.Services.AddCors(options =>
@@ -117,7 +133,6 @@ if (app.Environment.IsDevelopment())
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
