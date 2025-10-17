@@ -1,14 +1,16 @@
 using System.Security.Claims;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.OpenApi.Models;
+
 using backend.Infrastructure.Data;
 using backend.Domains.Entities;
-using backend.Services;
-using Microsoft.AspNetCore.Identity;
 using backend.Domains.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
+using backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,8 @@ builder.Services.AddIdentityCore<AppUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddSignInManager<SignInManager<AppUser>>();
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 // ------------------ Authentication (JWT) ------------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -50,11 +54,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ------------------ App services ------------------
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<TokenService>();
 
-// ------------------ Mailtrap (Email) ------------------
+builder.Services.AddHttpContextAccessor();
+
+// ------------------ Mailtrap (Email via SMTP) ------------------
 builder.Services.Configure<MailTrapOptions>(builder.Configuration.GetSection("MailtrapSmtp"));
-builder.Services.AddScoped<IMailSender, EmailService>();
+builder.Services.AddScoped<IEmailSender, EmailService>();
 
 // ------------------ CORS ------------------
 builder.Services.AddCors(options =>
@@ -71,16 +78,32 @@ builder.Services.AddCors(options =>
 // ------------------ Swagger & Controllers ------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "RystDentist API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header. Example: Bearer {token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference
+            { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
+    });
+});
 
 var app = builder.Build();
 
 // ------------------ Seed roles ------------------
 using (var scope = app.Services.CreateScope())
 {
-    var roles = new[] { "Admin", "Provider", "Patient" };
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in roles)
+    foreach (var role in new[] { "Admin", "Provider", "Patient" })
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
 }
