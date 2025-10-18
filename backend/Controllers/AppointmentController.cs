@@ -26,7 +26,7 @@ namespace backend.Controllers.Auth
         private readonly UserManager<AppUser> _users = users;
         private readonly ILogger<AppointmentController> _log = log;
 
-        [HttpGet("slots")]
+        [HttpGet("available-slots")]
         public async Task<IEnumerable<AvailabilitySlotDto>> GetSlots(
             [FromQuery] int providerId,
             [FromQuery] DateTime fromUtc,

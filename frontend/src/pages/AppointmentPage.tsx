@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate hook
 
 const NOUPE_EMBED_SRC =
   "https://www.noupe.com/embed/0199e9614c507f129e417decb705b0c02814.js";
@@ -22,6 +23,13 @@ function useNoupeEmbed() {
 }
 
 export default function AppointmentPage() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/login");
+  };
+
   useNoupeEmbed();
 
   return (
@@ -35,6 +43,13 @@ export default function AppointmentPage() {
       <div className="rounded-2xl border p-4 shadow-sm">
         <noscript>Aktiver JavaScript for å bruke chatten.</noscript>
       </div>
+
+      <button
+        onClick={handleLogout}
+        className="mt-6 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700"
+      >
+        Logg ut
+      </button>
     </main>
   );
 }
