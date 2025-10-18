@@ -62,6 +62,7 @@ builder.Services.AddHttpContextAccessor();
 // ------------------ Mailtrap (Email via SMTP) ------------------
 builder.Services.Configure<MailTrapOptions>(builder.Configuration.GetSection("MailtrapSmtp"));
 builder.Services.AddScoped<IEmailSender, EmailService>();
+builder.Services.AddScoped<TwoFactorAuthService>();
 builder.Services.Configure<TwilioOptions>(builder.Configuration.GetSection("Twilio"));
 
 bool twilioConfigured =
