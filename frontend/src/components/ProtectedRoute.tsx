@@ -1,6 +1,11 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { tokenStorage } from "../api/token";
+import type { ReactNode } from "react";
 
-export default function ProtectedRoute() {
-  return tokenStorage.get() ? <Outlet /> : <Navigate to="/login" replace />;
+type Props = { children: ReactNode };
+
+export default function ProtectedRoute({ children }: Props) {
+  const authed = !!tokenStorage.get();
+  if (!authed) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
