@@ -1,55 +1,109 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate hook
+import { useEffect, useMemo, useState } from "react";
+import {
+  getMyAppointments,
+  type AppointmentSummaryDto,
+} from "../api/appointments";
 
-const NOUPE_EMBED_SRC =
-  "https://www.noupe.com/embed/0199e9614c507f129e417decb705b0c02814.js";
-
-function useNoupeEmbed() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (document.getElementById("noupe-embed")) return;
-
-    const script = document.createElement("script");
-    script.id = "noupe-embed";
-    script.src = NOUPE_EMBED_SRC;
-    script.async = true;
-    script.defer = true;
-    script.addEventListener("error", (event) => {
-      console.error("Kunne ikke laste Noupe embed", event);
-    });
-    document.body.appendChild(script);
-  }, []);
+function groupAppointments(items: AppointmentSummaryDto[]) {
+  const now = new Date();
+  const upcoming: AppointmentSummaryDto[] = [];
+  const previous: AppointmentSummaryDto[] = [];
+  for (const appointment of items) {
+    const start = new Date(appointment.startTime);
+    (start >= now ? upcoming : previous).push(appointment);
+  }
+  return { upcoming, previous };
 }
 
-export default function AppointmentPage() {
-  const navigate = useNavigate();
+function fmtRange(startIso: string, endIso: string) {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  try {
+    return new Intl.DateTimeFormat("no-NO", {
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatRange(start, end);
+  } catch {
+    const f = new Intl.DateTimeFormat("no-NO", {
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${f.format(start)} – ${f.format(end)}`;
+  }
+}
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/login");
-  };
+export default function AppointmentListPage() {
+  const [items, setItems] = useState<AppointmentSummaryDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useNoupeEmbed();
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getMyAppointments();
+        setItems(data);
+      } catch (e: any) {
+        setError(e?.response?.data ?? "Kunne ikke hente timer.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void run();
+  }, []);
+
+  const { upcoming, previous } = useMemo(
+    () => groupAppointments(items),
+    [items]
+  );
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold mb-4">Mine timer</h1>
-      <p className="text-sm opacity-80 mb-4">
-        Kommer snart – bruk chatten under for å bestille, flytte eller
-        avbestille time.
-      </p>
+      <h1 className="text-2xl font-semibold mb-2">Mine timer</h1>
+      {loading && <p>Laster…</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
-      <div className="rounded-2xl border p-4 shadow-sm">
-        <noscript>Aktiver JavaScript for å bruke chatten.</noscript>
-      </div>
+      {!loading && !error && (
+        <>
+          <section className="mb-6">
+            <h2 className="font-semibold mb-2">Upcoming appointments</h2>
+            {upcomingList(upcoming)}
+          </section>
 
-      <button
-        onClick={handleLogout}
-        className="mt-6 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700"
-      >
-        Logg ut
-      </button>
+          <section>
+            <h2 className="font-semibold mb-2">Upcoming appointments</h2>
+            {upcomingList(previous)}
+          </section>
+        </>
+      )}
     </main>
+  );
+}
+
+function upcomingList(list: AppointmentSummaryDto[]) {
+  if (list.length === 0) return <p>None</p>;
+  return (
+    <ul className="space-y-2">
+      {list.map((appointment) => (
+        <li
+          key={appointment.id}
+          className="border rounded p-3 flex justify-between"
+        >
+          <span className="capitalize">
+            {fmtRange(appointment.startTime, appointment.endTime)}
+          </span>
+          <span className="text-sm opacity-80">{appointment.status}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
