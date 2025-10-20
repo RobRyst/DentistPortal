@@ -59,18 +59,18 @@ export default function BookingPage() {
       const data = await getAvailableSlots(PROVIDER_ID, rangeFrom, rangeTo);
       setSlots(data);
     } catch (e: any) {
-      if (e?.response?.status === 409) alert("Tiden er allerede booket.");
-      else alert("Kunne ikke bestille time.");
+      if (e?.response?.status === 409) alert("Time is not available");
+      else alert("Couldn't book this time.");
     }
   };
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold mb-4">Bestill time</h1>
+      <h1 className="text-2xl font-semibold mb-4">Book appointment</h1>
 
       <div className="flex gap-2 items-end mb-4">
         <div>
-          <label className="block text-sm">Startdato</label>
+          <label className="block text-sm">Start date</label>
           <input
             type="date"
             value={startDate.toISOString().slice(0, 10)}
@@ -93,11 +93,11 @@ export default function BookingPage() {
         </div>
       </div>
 
-      {loading && <p>Laster ledige tider…</p>}
+      {loading && <p>Loading available hours…</p>}
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && slots.length === 0 && (
-        <p>Ingen ledige timer i valgt periode.</p>
+        <p>No available hours at this time</p>
       )}
 
       <ul className="space-y-2">

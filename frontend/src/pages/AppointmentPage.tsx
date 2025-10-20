@@ -68,8 +68,8 @@ export default function AppointmentListPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold mb-2">Mine timer</h1>
-      {loading && <p>Laster…</p>}
+      <h1 className="text-2xl font-semibold mb-2">My hours</h1>
+      {loading && <p>Loading…</p>}
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && (
