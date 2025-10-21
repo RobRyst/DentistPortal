@@ -24,7 +24,9 @@ export default function DashboardPage() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const ok = data.roles?.some((r) => r === "Admin" || r === "Provider");
+        const ok = data.roles?.some(
+          (role) => role === "Admin" || role === "Provider"
+        );
         if (!ok) nav("/", { replace: true });
         else setAllowed(true);
       } catch {
