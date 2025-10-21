@@ -9,7 +9,7 @@ using backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using backend.Domains.Interfaces;
 
-namespace backend.Controllers.Auth
+namespace backend.Controllers
 {
 
     [ApiController]

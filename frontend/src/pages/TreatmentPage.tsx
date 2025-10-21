@@ -79,7 +79,7 @@ export default function TreatmentsPage() {
               <strong>Price:</strong> {treatment.price}
             </p>
             <button
-              onClick={() => handleBook(t)}
+              onClick={() => handleBook(treatment)}
               className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
               Book now

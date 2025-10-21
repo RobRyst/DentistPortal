@@ -11,6 +11,7 @@ namespace backend.Infrastructure.Data
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<IssueItem> Faq => Set<IssueItem>();
         public DbSet<TwoFactorCode> TwoFactorCodes => Set<TwoFactorCode>();
+        public DbSet<Treatment> Treatments => Set<Treatment>();
 
         protected override void OnModelCreating(ModelBuilder b)
         {

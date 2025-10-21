@@ -1,12 +1,11 @@
 using backend.DTOs;
-using backend.Domains.Entities;
 using backend.Infrastructure.Data;
 using backend.Mapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Controllers.Auth
+namespace backend.Controllers
 {
     [ApiController]
     [Route("api/availability-slots")]

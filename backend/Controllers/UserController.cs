@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace backend.Controllers.Auth
+namespace backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
