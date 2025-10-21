@@ -2,37 +2,66 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { tokenStorage } from "../../api/token";
-import { userLogin } from "../../api/authAPI";
+import { loginStart, verify2FA } from "../../api/authAPI";
 
 export default function LoginPage() {
+  const [step, setStep] = useState<"creds" | "code">("creds");
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string>("");
+  const [maskedEmail, setMaskedEmail] = useState<string>("");
+  const [code, setCode] = useState("");
+
   const navigate = useNavigate();
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [event.target.name]: event.target.value });
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submitCreds = async (event: FormEvent) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      const res = await userLogin(form);
-      tokenStorage.set(res.data.token);
-
+      const res = await loginStart(form);
+      setUserId(res.data.userId);
+      setMaskedEmail(res.data.maskedEmail);
+      setStep("code");
       Swal.fire({
-        position: "center",
-        icon: "success",
-        title: "You successfully logged in",
+        icon: "info",
+        title: "Check your email",
+        text: `We sent a 6-digit code to ${res.data.maskedEmail}.`,
+        timer: 2000,
         showConfirmButton: false,
-        timer: 1200,
       });
-
-      setTimeout(() => navigate("/", { replace: true }), 800);
     } catch {
       Swal.fire({
         icon: "error",
         title: "Oops...",
-        text: "Incorrect Email or Password",
+        text: "Incorrect email or password.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitCode = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const res = await verify2FA({ userId, code });
+      tokenStorage.set(res.data.token);
+      Swal.fire({
+        position: "center",
+        icon: "success",
+        title: "Logged in",
+        showConfirmButton: false,
+        timer: 1200,
+      });
+      setTimeout(() => navigate("/", { replace: true }), 800);
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid code",
+        text: "Please try again.",
       });
     } finally {
       setLoading(false);
@@ -47,59 +76,92 @@ export default function LoginPage() {
             <h1 className="text-2xl font-semibold">Sign in</h1>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="mb-1 block text-sm">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="Email"
-                className="block w-full rounded-xl border px-4 py-2.5 outline-none"
-                required
-              />
-            </div>
+          {step === "creds" ? (
+            <form onSubmit={submitCreds} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="mb-1 block text-sm">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  className="block w-full rounded-xl border px-4 py-2.5"
+                  required
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="mb-1 block text-sm">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="block w-full rounded-xl border px-4 py-2.5 outline-none"
-                required
-              />
-            </div>
+              <div>
+                <label htmlFor="password" className="mb-1 block text-sm">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="block w-full rounded-xl border px-4 py-2.5"
+                  required
+                />
+              </div>
 
-            <button
-              type="submit"
-              className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold"
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-
-            <p className="text-center text-sm pt-2">
-              Not signed up?{" "}
-              <Link
-                to="/register"
-                className="font-medium underline-offset-4 hover:underline"
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold"
+                disabled={loading}
               >
-                Create an account
-              </Link>
-            </p>
-          </form>
+                {loading ? "Checking..." : "Continue"}
+              </button>
+
+              <p className="text-center text-sm pt-2">
+                Not signed up?{" "}
+                <Link
+                  to="/register"
+                  className="font-medium underline-offset-4 hover:underline"
+                >
+                  Create an account
+                </Link>
+              </p>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} className="space-y-4">
+              <p className="text-sm text-center">
+                Enter the 6-digit code sent to{" "}
+                <span className="font-medium">{maskedEmail}</span>.
+              </p>
+              <div>
+                <label htmlFor="code" className="mb-1 block text-sm">
+                  Code
+                </label>
+                <input
+                  id="code"
+                  name="code"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="123456"
+                  className="block w-full rounded-xl border px-4 py-2.5 tracking-widest text-center"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold"
+                disabled={loading}
+              >
+                {loading ? "Verifying..." : "Verify & Sign in"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </main>

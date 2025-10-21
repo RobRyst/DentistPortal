@@ -1,6 +1,12 @@
 import axios from "axios";
 import { env } from "./env";
 
+export type LoginStartRequest = { email: string; password: string };
+export type LoginStartResponse = {
+  twoFactorRequired: boolean;
+  userId: string;
+  maskedEmail: string;
+};
 export type LoginRequest = { email: string; password: string };
 export type RegisterRequest = {
   email: string;
@@ -9,6 +15,7 @@ export type RegisterRequest = {
   lastName?: string;
   phoneNumber?: string;
 };
+export type Verify2FARequest = { userId: string; code: string };
 export type AuthTokenResponse = { token: string };
 
 export async function userLogin(data: LoginRequest) {
@@ -20,4 +27,18 @@ export async function userLogin(data: LoginRequest) {
 
 export async function userRegister(data: RegisterRequest) {
   return axios.post<void>(`${env.API_BASE_URL}/api/auth/register`, data);
+}
+
+export async function loginStart(data: LoginStartRequest) {
+  return axios.post<LoginStartResponse>(
+    `${env.API_BASE_URL}/api/auth/login/start`,
+    data
+  );
+}
+
+export async function verify2FA(data: Verify2FARequest) {
+  return axios.post<AuthTokenResponse>(
+    `${env.API_BASE_URL}/api/auth/2fa/verify`,
+    data
+  );
 }
