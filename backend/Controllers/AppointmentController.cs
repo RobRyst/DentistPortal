@@ -122,13 +122,6 @@ namespace backend.Controllers
             return NoContent();
         }
 
-        public class UpdateAppointmentRequest
-        {
-            public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
-            public string? Notes { get; set; }
-        }
-
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Provider")]
         public async Task<ActionResult<AppointmentDto>> Update(int id, [FromBody] UpdateAppointmentRequest dto)
