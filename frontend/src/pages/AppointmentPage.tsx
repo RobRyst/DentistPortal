@@ -1,17 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getMyAppointments,
   type AppointmentSummaryDto,
 } from "../api/appointments";
 
-function groupAppointments(items: AppointmentSummaryDto[]) {
+function groupAndSort(items: AppointmentSummaryDto[]) {
   const now = new Date();
-  const upcoming: AppointmentSummaryDto[] = [];
-  const previous: AppointmentSummaryDto[] = [];
-  for (const appointment of items) {
-    const start = new Date(appointment.startTime);
-    (start >= now ? upcoming : previous).push(appointment);
-  }
+
+  const upcoming = items
+    .filter((a) => new Date(a.startTime) >= now)
+    .sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+
+  const previous = items
+    .filter((a) => new Date(a.startTime) < now)
+    .sort(
+      (a, b) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+    );
+
   return { upcoming, previous };
 }
 
@@ -44,44 +53,74 @@ export default function AppointmentListPage() {
   const [items, setItems] = useState<AppointmentSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getMyAppointments();
-        setItems(data);
-      } catch (e: any) {
-        setError(e?.response?.data ?? "Kunne ikke hente timer.");
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getMyAppointments();
+      if (mountedRef.current) setItems(data);
+    } catch (e: any) {
+      if (mountedRef.current) {
+        setError(e?.response?.data ?? "Could not load your appointments.");
       }
-    };
-    void run();
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
   }, []);
 
-  const { upcoming, previous } = useMemo(
-    () => groupAppointments(items),
-    [items]
-  );
+  useEffect(() => {
+    mountedRef.current = true;
+    void fetchData();
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [fetchData]);
+
+  const { upcoming, previous } = useMemo(() => groupAndSort(items), [items]);
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold mb-2">My hours</h1>
+      <div className="mb-3 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">My appointments</h1>
+        <button
+          onClick={fetchData}
+          className="text-sm px-3 py-1.5 rounded border hover:bg-zinc-50"
+        >
+          Refresh
+        </button>
+      </div>
+
       {loading && <p>Loading…</p>}
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && !error && (
         <>
           <section className="mb-6">
-            <h2 className="font-semibold mb-2">Upcoming appointments</h2>
-            {upcomingList(upcoming)}
+            <h2 className="font-semibold mb-2">
+              Upcoming appointments{" "}
+              <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                {upcoming.length}
+              </span>
+            </h2>
+            <AppointmentList
+              list={upcoming}
+              emptyText="No upcoming appointments."
+            />
           </section>
 
           <section>
-            <h2 className="font-semibold mb-2">Upcoming appointments</h2>
-            {upcomingList(previous)}
+            <h2 className="font-semibold mb-2">
+              Previous appointments{" "}
+              <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                {previous.length}
+              </span>
+            </h2>
+            <AppointmentList
+              list={previous}
+              emptyText="No previous appointments."
+            />
           </section>
         </>
       )}
@@ -89,21 +128,45 @@ export default function AppointmentListPage() {
   );
 }
 
-function upcomingList(list: AppointmentSummaryDto[]) {
-  if (list.length === 0) return <p>None</p>;
+function AppointmentList({
+  list,
+  emptyText,
+}: {
+  list: AppointmentSummaryDto[];
+  emptyText: string;
+}) {
+  if (list.length === 0)
+    return <p className="text-sm opacity-75">{emptyText}</p>;
+
   return (
     <ul className="space-y-2">
-      {list.map((appointment) => (
-        <li
-          key={appointment.id}
-          className="border rounded p-3 flex justify-between"
-        >
-          <span className="capitalize">
-            {fmtRange(appointment.startTime, appointment.endTime)}
-          </span>
-          <span className="text-sm opacity-80">{appointment.status}</span>
-        </li>
-      ))}
+      {list.map((appointment) => {
+        const isCancelled = appointment.status?.toLowerCase() === "cancelled";
+        return (
+          <li
+            key={appointment.id}
+            className="border rounded p-3 flex justify-between items-center"
+          >
+            <span
+              className={`capitalize ${
+                isCancelled ? "line-through opacity-70" : ""
+              }`}
+            >
+              {fmtRange(appointment.startTime, appointment.endTime)}
+            </span>
+            <span
+              className={`text-xs px-2 py-1 rounded ${
+                isCancelled
+                  ? "bg-red-100 text-red-800"
+                  : "bg-zinc-100 text-zinc-800"
+              }`}
+              title={appointment.status}
+            >
+              {appointment.status}
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
