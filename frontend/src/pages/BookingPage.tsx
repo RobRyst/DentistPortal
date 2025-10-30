@@ -1,29 +1,41 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { DateTime } from "luxon";
 import { getAvailableSlots, bookAppointment } from "../api/appointments";
 
 const PROVIDER_ID = 1;
+const OSLO = "Europe/Oslo";
 
-function toUtcIso(d: Date) {
-  return new Date(
-    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0)
-  ).toISOString();
+function rangeFromUtcISO(osloDay: DateTime) {
+  return osloDay.startOf("day").setZone(OSLO).toUTC().toISO();
+}
+function rangeToUtcISO(osloDay: DateTime, daysAhead: number) {
+  return osloDay
+    .plus({ days: daysAhead })
+    .endOf("day")
+    .setZone(OSLO)
+    .toUTC()
+    .toISO();
 }
 
-function endOfDayUtcIso(d: Date) {
-  return new Date(
-    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999)
-  ).toISOString();
-}
+function formatOsloRange(startUtcISO: string, endUtcISO: string) {
+  const s = DateTime.fromISO(startUtcISO, { zone: "utc" }).setZone(OSLO);
+  const e = DateTime.fromISO(endUtcISO, { zone: "utc" }).setZone(OSLO);
 
-function addDays(base: Date, days: number) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  return d;
+  const datePart = s.toFormat("EEEE dd.MM.yyyy");
+  const timeStart = s.toFormat("HH:mm");
+  const timeEnd = e.toFormat("HH:mm");
+  if (!s.hasSame(e, "day")) {
+    const endDatePart = e.toFormat("EEEE dd.MM.yyyy HH:mm");
+    return `${datePart} ${timeStart} – ${endDatePart}`;
+  }
+  return `${datePart} ${timeStart} – ${timeEnd}`;
 }
 
 export default function BookingPage() {
-  const [startDate, setStartDate] = useState(() => new Date());
+  const [startDate, setStartDate] = useState<DateTime>(() =>
+    DateTime.now().setZone(OSLO).startOf("day")
+  );
   const [days, setDays] = useState(14);
   const [slots, setSlots] = useState<
     Array<{ id: number; startTime: string; endTime: string }>
@@ -43,9 +55,9 @@ export default function BookingPage() {
       }
     | undefined;
 
-  const rangeFrom = useMemo(() => toUtcIso(startDate), [startDate]);
+  const rangeFrom = useMemo(() => rangeFromUtcISO(startDate), [startDate]);
   const rangeTo = useMemo(
-    () => endOfDayUtcIso(addDays(startDate, days)),
+    () => rangeToUtcISO(startDate, days),
     [startDate, days]
   );
 
@@ -89,6 +101,7 @@ export default function BookingPage() {
   return (
     <main className="mx-auto max-w-2xl p-6">
       <h1 className="text-2xl font-semibold mb-4">Book appointment</h1>
+
       {treatment && (
         <div className="mb-4 rounded-xl border p-4 bg-gray-50">
           <div className="flex items-center justify-between">
@@ -116,12 +129,14 @@ export default function BookingPage() {
 
       <div className="flex gap-2 items-end mb-4">
         <div>
-          <label className="block text-sm">Start date</label>
+          <label className="block text-sm">Start date (Oslo)</label>
           <input
             type="date"
-            value={startDate.toISOString().slice(0, 10)}
+            value={startDate.toFormat("yyyy-LL-dd")}
             onChange={(e) =>
-              setStartDate(new Date(e.target.value + "T00:00:00"))
+              setStartDate(
+                DateTime.fromISO(e.target.value, { zone: OSLO }).startOf("day")
+              )
             }
             className="border rounded px-3 py-2"
           />
@@ -141,38 +156,13 @@ export default function BookingPage() {
 
       {loading && <p>Loading available times…</p>}
       {error && <p className="text-red-600">{error}</p>}
-
       {!loading && !error && slots.length === 0 && (
         <p>No available times in this range.</p>
       )}
 
       <ul className="space-y-2">
         {slots.map((slot) => {
-          const start = new Date(slot.startTime);
-          const end = new Date(slot.endTime);
-          const label = (() => {
-            try {
-              return new Intl.DateTimeFormat("no-NO", {
-                weekday: "long",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              }).formatRange(start, end);
-            } catch {
-              const f = new Intl.DateTimeFormat("no-NO", {
-                weekday: "long",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              return `${f.format(start)} – ${f.format(end)}`;
-            }
-          })();
-
+          const label = formatOsloRange(slot.startTime, slot.endTime);
           return (
             <li
               key={slot.id}
