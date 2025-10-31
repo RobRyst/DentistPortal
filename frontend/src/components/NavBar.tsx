@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { tokenStorage } from "../api/token";
+import NotificationBell from "./NotificationBell";
 
 export default function NavBar() {
   const [isAuthed, setIsAuthed] = useState<boolean>(
@@ -35,6 +36,7 @@ export default function NavBar() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <NavLink
               to="/behandlinger"
               className={({ isActive }) =>
