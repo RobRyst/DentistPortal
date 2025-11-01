@@ -152,6 +152,53 @@ namespace backend.Controllers
             return Ok(appointment.ToDto());
         }
 
+        [HttpPost]
+        [Route("")]
+        [Authorize(Roles = "Admin,Provider")]
+        public async Task<ActionResult<AppointmentDto>> AdminCreate([FromBody] CreateAppointmentRequest dto)
+        {
+            if (dto.EndTime <= dto.StartTime) return BadRequest("EndTime must be after StartTime.");
+
+            bool clash = await _db.Appointments.AnyAsync(appointment =>
+                appointment.ProviderId == dto.ProviderId &&
+                appointment.Status != AppointmentStatus.Cancelled &&
+                appointment.StartTime < dto.EndTime && dto.StartTime < appointment.EndTime);
+
+            if (clash) return Conflict("Time already booked.");
+
+            var appointment = new Appointment
+            {
+                UserId = dto.UserId,
+                ProviderId = dto.ProviderId,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                Notes = dto.Notes
+            };
+
+            _db.Appointments.Add(appointment);
+            await _db.SaveChangesAsync();
+
+            _db.Notifications.Add(new Notification
+            {
+                UserId = appointment.UserId,
+                Message = $"Du har fått tildelt time {appointment.StartTime:u}"
+            });
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(Update), new { id = appointment.Id }, appointment.ToDto());
+        }
+
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin,Provider")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var appointment = await _db.Appointments.FindAsync(id);
+            if (appointment is null) return NotFound();
+
+            _db.Appointments.Remove(appointment);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
         private string GetUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirst(c => c.Type.Contains("sub"))?.Value

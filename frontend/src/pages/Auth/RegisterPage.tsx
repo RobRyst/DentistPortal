@@ -14,10 +14,12 @@ export default function RegisterPage() {
     try {
       await userRegister({ email, password });
       nav("/login", { replace: true });
-    } catch {
-      alert("Registration failed");
-    } finally {
-      setLoading(false);
+    } catch (e: any) {
+      const msg =
+        e?.response?.data && Array.isArray(e.response.data)
+          ? e.response.data.map((x: any) => x.description || x.code).join("\n")
+          : e?.response?.data ?? "Registration failed";
+      alert(msg);
     }
   }
 

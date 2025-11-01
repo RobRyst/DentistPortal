@@ -99,3 +99,31 @@ export async function adminUpdateSlot(
 export async function adminDeleteSlot(id: number) {
   await http.delete<void>(`/api/availability-slots/${id}`);
 }
+
+export type CreateAppointmentRequest = {
+  userId: string;
+  providerId: number;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+};
+
+export async function adminListAppointments(params?: {
+  fromUtc?: string;
+  toUtc?: string;
+  providerId?: number;
+}) {
+  const { data } = await http.get<AppointmentDto[]>("/api/appointment/all", {
+    params,
+  });
+  return data;
+}
+
+export async function adminCreateAppointment(req: CreateAppointmentRequest) {
+  const { data } = await http.post<AppointmentDto>("/api/appointment", req);
+  return data;
+}
+
+export async function adminDeleteAppointment(id: number) {
+  await http.delete<void>(`/api/appointment/${id}`);
+}
