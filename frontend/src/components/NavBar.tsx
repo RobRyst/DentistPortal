@@ -43,7 +43,7 @@ export default function NavBar() {
                 `${linkBase} ${isActive ? linkActive : linkInactive}`
               }
             >
-              Behandlinger
+              Treatments
             </NavLink>
             <NavLink
               to="/book"
@@ -51,7 +51,7 @@ export default function NavBar() {
                 `${linkBase} ${isActive ? linkActive : linkInactive}`
               }
             >
-              Bestill time
+              Order Appointment
             </NavLink>
 
             {!isAuthed ? (
@@ -61,14 +61,14 @@ export default function NavBar() {
                   `${linkBase} ${isActive ? linkActive : "text-blue-600"}`
                 }
               >
-                Logg inn
+                Log in
               </NavLink>
             ) : (
               <button
                 onClick={logout}
                 className="px-3 py-2 rounded-md text-sm font-medium text-white bg-zinc-800 hover:bg-zinc-700"
               >
-                Logg ut
+                Log out
               </button>
             )}
           </div>

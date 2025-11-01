@@ -17,8 +17,8 @@ export default function NotificationBell() {
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const c = await getUnreadCount();
-        setCount(c);
+        const count = await getUnreadCount();
+        setCount(count);
       } catch {
         // ignore
       }
@@ -35,13 +35,13 @@ export default function NotificationBell() {
       }
     };
 
-    const vis = () =>
+    const visible = () =>
       document.visibilityState === "visible" ? start() : stop();
-    document.addEventListener("visibilitychange", vis);
+    document.addEventListener("visibilitychange", visible);
     start();
     return () => {
       stop();
-      document.removeEventListener("visibilitychange", vis);
+      document.removeEventListener("visibilitychange", visible);
     };
   }, []);
 
@@ -63,7 +63,11 @@ export default function NotificationBell() {
     try {
       await markRead(id);
       setItems((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        prev.map((notification) =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
       );
       setCount((c) => Math.max(0, c - 1));
     } catch {
@@ -74,7 +78,9 @@ export default function NotificationBell() {
   const onMarkAll = async () => {
     try {
       await markAllRead();
-      setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setItems((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
       setCount(0);
     } catch {
       // ignore
@@ -129,29 +135,36 @@ export default function NotificationBell() {
               <div className="p-4 text-sm text-zinc-600">No notifications.</div>
             ) : (
               <ul className="divide-y">
-                {items.map((n) => (
-                  <li key={n.id} className="p-3 flex items-start gap-2">
+                {items.map((notification) => (
+                  <li
+                    key={notification.id}
+                    className="p-3 flex items-start gap-2"
+                  >
                     <span
                       className={`mt-1 h-2 w-2 rounded-full ${
-                        n.isRead ? "bg-zinc-300" : "bg-blue-600"
+                        notification.isRead ? "bg-zinc-300" : "bg-blue-600"
                       }`}
                       aria-hidden
                     />
                     <div className="flex-1">
                       <p
                         className={`text-sm ${
-                          n.isRead ? "text-zinc-600" : "text-zinc-900"
+                          notification.isRead
+                            ? "text-zinc-600"
+                            : "text-zinc-900"
                         }`}
                       >
-                        {n.message}
+                        {notification.message}
                       </p>
                       <p className="text-xs text-zinc-500 mt-1">
-                        {new Date(n.createdTime).toLocaleString("no-NO")}
+                        {new Date(notification.createdTime).toLocaleString(
+                          "no-NO"
+                        )}
                       </p>
                     </div>
-                    {!n.isRead && (
+                    {!notification.isRead && (
                       <button
-                        onClick={() => onMarkRead(n.id)}
+                        onClick={() => onMarkRead(notification.id)}
                         className="text-xs px-2 py-1 rounded border hover:bg-zinc-50"
                       >
                         Mark read
