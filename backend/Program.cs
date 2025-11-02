@@ -137,13 +137,13 @@ using (var scope = app.Services.CreateScope())
         (start: Day(todayLocal.AddDays(1), 13, 0), end: Day(todayLocal.AddDays(1), 16, 0)),
     };
 
-    foreach (var b in blocks)
+    foreach (var block in blocks)
     {
-        var startUtc = b.start.ToUniversalTime();
-        var endUtc   = b.end.ToUniversalTime();
+        var startUtc = block.start.ToUniversalTime();
+        var endUtc   = block.end.ToUniversalTime();
 
-        bool exists = await db.AvailabilitySlots.AnyAsync(s =>
-            s.ProviderId == 1 && s.StartTime == startUtc && s.EndTime == endUtc);
+        bool exists = await db.AvailabilitySlots.AnyAsync(slot =>
+            slot.ProviderId == 1 && slot.StartTime == startUtc && slot.EndTime == endUtc);
         if (!exists)
         {
             db.AvailabilitySlots.Add(new AvailabilitySlot
