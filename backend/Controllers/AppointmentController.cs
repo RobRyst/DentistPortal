@@ -28,16 +28,112 @@ namespace backend.Controllers
 
         [HttpGet("available-slots")]
         public async Task<IEnumerable<AvailabilitySlotDto>> GetSlots(
-            [FromQuery] int providerId,
-            [FromQuery] DateTime fromUtc,
-            [FromQuery] DateTime toUtc)
-            => (await _db.AvailabilitySlots
-                .Where(slot => slot.ProviderId == providerId
-                            && slot.StartTime >= fromUtc
-                            && slot.EndTime <= toUtc)
+    [FromQuery] int providerId,
+    [FromQuery] DateTime fromUtc,
+    [FromQuery] DateTime toUtc,
+    [FromQuery] int? durationMinutes = null,
+    [FromQuery] int? stepMinutes = null
+)
+        {
+            var availability = await _db.AvailabilitySlots
+                .Where(slot => slot.ProviderId == providerId &&
+                            slot.StartTime < toUtc &&
+                            slot.EndTime > fromUtc)
                 .OrderBy(slot => slot.StartTime)
-                .ToListAsync())
-               .Select(slot => slot.ToDto());
+                .ToListAsync();
+
+            if (availability.Count == 0) return Array.Empty<AvailabilitySlotDto>();
+
+            var appts = await _db.Appointments
+                .Where(appointment => appointment.ProviderId == providerId &&
+                            appointment.Status != AppointmentStatus.Cancelled &&
+                            appointment.StartTime < toUtc &&
+                            appointment.EndTime > fromUtc)
+                .OrderBy(appointment => appointment.StartTime)
+                .ToListAsync();
+
+            static List<(DateTime start, DateTime end)> SubtractBusy(
+                DateTime freeStart, DateTime freeEnd, IEnumerable<Appointment> unavailable)
+            {
+                var result = new List<(DateTime start, DateTime end)> { (freeStart, freeEnd) };
+
+                foreach (var busy in unavailable)
+                {
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        var (start, end) = result[i];
+                        var busystart = busy.StartTime; var busyend = busy.EndTime;
+
+                        if (busyend <= start || busyend >= end) continue;
+
+                        var leftStart = start; var leftE = DateTime.MaxValue;
+                        var rightStart = DateTime.MinValue; var rightEnd = end;
+
+                        bool hasLeft = busystart > start;
+                        bool hasRight = busyend < end;
+
+                        result.RemoveAt(i);
+
+                        if (hasLeft)
+                            result.Insert(i++, (start, busystart));
+                        if (hasRight)
+                            result.Insert(i, (busyend, end));
+
+                        break;
+                    }
+                }
+
+                return result.Where(x => x.end > x.start).ToList();
+            }
+
+            var freeWindows = new List<(DateTime s, DateTime e)>();
+            foreach (var available in availability)
+            {
+                var winStart = available.StartTime < fromUtc ? fromUtc : available.StartTime;
+                var winEnd = available.EndTime > toUtc ? toUtc : available.EndTime;
+                if (winEnd <= winStart) continue;
+
+                var overlappingAppts = appts.Where(busy => busy.StartTime < winEnd && busy.EndTime > winStart);
+                var pieces = SubtractBusy(winStart, winEnd, overlappingAppts);
+                freeWindows.AddRange(pieces);
+            }
+
+            var slots = new List<AvailabilitySlotDto>();
+            int idSeq = 1;
+
+            int duration = Math.Max(0, durationMinutes ?? 0);
+            int step = Math.Max(1, stepMinutes ?? (duration > 0 ? duration : 1));
+
+            foreach (var (start, end) in freeWindows.OrderBy(w => w.s))
+            {
+                if (duration <= 0)
+                {
+                    slots.Add(new AvailabilitySlotDto
+                    {
+                        Id = idSeq++,
+                        ProviderId = providerId,
+                        StartTime = start,
+                        EndTime = end
+                    });
+                    continue;
+                }
+
+                var t = start;
+                while (t.AddMinutes(duration) <= end)
+                {
+                    slots.Add(new AvailabilitySlotDto
+                    {
+                        Id = idSeq++,
+                        ProviderId = providerId,
+                        StartTime = t,
+                        EndTime = t.AddMinutes(duration)
+                    });
+                    t = t.AddMinutes(step);
+                }
+            }
+
+            return slots;
+        }
 
         [HttpPost("bookings")]
         public async Task<ActionResult<AppointmentDto>> Book([FromBody] BookAppointmentRequest dto)
@@ -204,4 +300,6 @@ namespace backend.Controllers
             ?? User.FindFirst(c => c.Type.Contains("sub"))?.Value
             ?? "";
     }
+
+
 }

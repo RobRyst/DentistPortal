@@ -39,11 +39,12 @@ export type BookAppointmentRequest = {
 export async function getAvailableSlots(
   providerId: number,
   fromUtc: string,
-  toUtc: string
+  toUtc: string,
+  opts?: { durationMinutes?: number; stepMinutes?: number }
 ) {
   const { data } = await http.get<AvailabilitySlotDto[]>(
     `/api/appointment/available-slots`,
-    { params: { providerId, fromUtc, toUtc } }
+    { params: { providerId, fromUtc, toUtc, ...opts } }
   );
   return data;
 }

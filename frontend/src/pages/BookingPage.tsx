@@ -32,6 +32,15 @@ function formatOsloRange(startUtcISO: string, endUtcISO: string) {
   return `${datePart} ${timeStart} – ${timeEnd}`;
 }
 
+function parseDurationToMinutes(s?: string) {
+  if (!s) return 30;
+  const min = s.match(/(\d+)\s*m(in(ute)?s?)?/i);
+  if (min) return parseInt(min[1], 10);
+  const hrs = s.match(/(\d+)\s*h(our|rs)?/i);
+  if (hrs) return parseInt(hrs[1], 10) * 60;
+  return 30;
+}
+
 export default function BookingPage() {
   const [startDate, setStartDate] = useState<DateTime>(() =>
     DateTime.now().setZone(OSLO).startOf("day")
@@ -55,17 +64,28 @@ export default function BookingPage() {
       }
     | undefined;
 
-  const rangeFrom = useMemo(() => rangeFromUtcISO(startDate), [startDate]);
+  const rangeFrom = useMemo(
+    () => rangeFromUtcISO(startDate) as string,
+    [startDate]
+  );
   const rangeTo = useMemo(
-    () => rangeToUtcISO(startDate, days),
+    () => rangeToUtcISO(startDate, days) as string,
     [startDate, days]
+  );
+
+  const desiredMinutes = useMemo(
+    () => parseDurationToMinutes(treatment?.duration),
+    [treatment]
   );
 
   const fetchSlots = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAvailableSlots(PROVIDER_ID, rangeFrom, rangeTo);
+      const data = await getAvailableSlots(PROVIDER_ID, rangeFrom, rangeTo, {
+        durationMinutes: desiredMinutes,
+        stepMinutes: 15,
+      });
       setSlots(data);
     } catch (e: any) {
       setError(e?.response?.data ?? "Could not load available times.");
@@ -76,7 +96,8 @@ export default function BookingPage() {
 
   useEffect(() => {
     void fetchSlots();
-  }, [rangeFrom, rangeTo]);
+    // include desiredMinutes so changing treatment updates the list
+  }, [rangeFrom, rangeTo, desiredMinutes]);
 
   const onBook = async (slotId: number, startTime: string, endTime: string) => {
     try {

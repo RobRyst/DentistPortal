@@ -63,7 +63,6 @@ public class AuthController(
         var user = await _users.FindByEmailAsync(dto.Email);
         if (user is null || !await _users.CheckPasswordAsync(user, dto.Password))
             return Unauthorized();
-
         await _twoFactorAuth.GenerateAndSendCodeAsync(user.Id);
 
         string mask(string? e)

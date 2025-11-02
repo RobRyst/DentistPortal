@@ -122,14 +122,70 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var osloNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"));
+    DateTime Day(DateTime d, int hour, int minutes) => new DateTime(d.Year, d.Month, d.Day, hour, minutes, 0, DateTimeKind.Local);
+
+    var todayLocal = osloNow.Date;
+    var blocks = new[]
+    {
+        (start: Day(todayLocal, 9, 0),  end: Day(todayLocal, 12, 0)),
+        (start: Day(todayLocal, 13, 0), end: Day(todayLocal, 16, 0)),
+        (start: Day(todayLocal.AddDays(1), 9, 0),  end: Day(todayLocal.AddDays(1), 12, 0)),
+        (start: Day(todayLocal.AddDays(1), 13, 0), end: Day(todayLocal.AddDays(1), 16, 0)),
+    };
+
+    foreach (var b in blocks)
+    {
+        var startUtc = b.start.ToUniversalTime();
+        var endUtc   = b.end.ToUniversalTime();
+
+        bool exists = await db.AvailabilitySlots.AnyAsync(s =>
+            s.ProviderId == 1 && s.StartTime == startUtc && s.EndTime == endUtc);
+        if (!exists)
+        {
+            db.AvailabilitySlots.Add(new AvailabilitySlot
+            {
+                ProviderId = 1,
+                StartTime = startUtc,
+                EndTime = endUtc
+            });
+        }
+    }
+    await db.SaveChangesAsync();
+}
 
 // ------------------ Seed roles ------------------
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "Admin", "Provider", "Patient" })
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var normalizer  = scope.ServiceProvider.GetRequiredService<ILookupNormalizer>();
+
+    var allUsers = await userManager.Users.ToListAsync();
+
+    foreach (var user in allUsers)
+    {
+        if (string.IsNullOrWhiteSpace(user.UserName))
+            user.UserName = user.Email ?? user.UserName ?? "";
+
+        var normEmail = string.IsNullOrWhiteSpace(user.Email) ? null : normalizer.NormalizeEmail(user.Email);
+        var normUser  = string.IsNullOrWhiteSpace(user.UserName) ? null : normalizer.NormalizeName(user.UserName);
+
+        bool changed = false;
+        if (user.NormalizedEmail != normEmail) { user.NormalizedEmail = normEmail; changed = true; }
+        if (user.NormalizedUserName != normUser) { user.NormalizedUserName = normUser; changed = true; }
+
+        if (changed)
+        {
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                
+            }
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
