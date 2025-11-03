@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
+import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { DateTime } from "luxon";
 import { getAvailableSlots, bookAppointment } from "../api/appointments";
 
@@ -19,14 +20,14 @@ function rangeToUtcISO(osloDay: DateTime, daysAhead: number) {
 }
 
 function formatOsloRange(startUtcISO: string, endUtcISO: string) {
-  const s = DateTime.fromISO(startUtcISO, { zone: "utc" }).setZone(OSLO);
-  const e = DateTime.fromISO(endUtcISO, { zone: "utc" }).setZone(OSLO);
+  const start = DateTime.fromISO(startUtcISO, { zone: "utc" }).setZone(OSLO);
+  const end = DateTime.fromISO(endUtcISO, { zone: "utc" }).setZone(OSLO);
 
-  const datePart = s.toFormat("EEEE dd.MM.yyyy");
-  const timeStart = s.toFormat("HH:mm");
-  const timeEnd = e.toFormat("HH:mm");
-  if (!s.hasSame(e, "day")) {
-    const endDatePart = e.toFormat("EEEE dd.MM.yyyy HH:mm");
+  const datePart = start.toFormat("EEEE dd.MM.yyyy");
+  const timeStart = start.toFormat("HH:mm");
+  const timeEnd = end.toFormat("HH:mm");
+  if (!start.hasSame(end, "day")) {
+    const endDatePart = start.toFormat("EEEE dd.MM.yyyy HH:mm");
     return `${datePart} ${timeStart} – ${endDatePart}`;
   }
   return `${datePart} ${timeStart} – ${timeEnd}`;
@@ -42,6 +43,7 @@ function parseDurationToMinutes(s?: string) {
 }
 
 export default function BookingPage() {
+  const navigate = useNavigate();
   const [startDate, setStartDate] = useState<DateTime>(() =>
     DateTime.now().setZone(OSLO).startOf("day")
   );
@@ -96,7 +98,6 @@ export default function BookingPage() {
 
   useEffect(() => {
     void fetchSlots();
-    // include desiredMinutes so changing treatment updates the list
   }, [rangeFrom, rangeTo, desiredMinutes]);
 
   const onBook = async (slotId: number, startTime: string, endTime: string) => {
@@ -108,8 +109,16 @@ export default function BookingPage() {
         endTime,
         notes: treatment ? `Treatment: ${treatment.title}` : undefined,
       });
-      alert("Appointment confirmed!");
-      await fetchSlots();
+
+      Swal.fire({
+        position: "center",
+        icon: "success",
+        title: "Appointment confirmed!",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      navigate("/", { replace: true });
+      setTimeout(() => navigate("/", { replace: true }), 1500);
     } catch (e: any) {
       if (e?.response?.status === 409)
         alert("That time is no longer available.");
@@ -119,34 +128,36 @@ export default function BookingPage() {
     }
   };
 
+  if (!treatment) {
+    return <Navigate to="/behandlinger" replace />;
+  }
+
   return (
     <main className="mx-auto max-w-2xl p-6">
       <h1 className="text-2xl font-semibold mb-4">Book appointment</h1>
 
-      {treatment && (
-        <div className="mb-4 rounded-xl border p-4 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-medium">{treatment.title}</h2>
-              {treatment.description && (
-                <p className="text-sm text-gray-600">{treatment.description}</p>
+      <div className="mb-4 rounded-xl border p-4 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-medium">{treatment.title}</h2>
+            {treatment.description && (
+              <p className="text-sm text-gray-600">{treatment.description}</p>
+            )}
+            <div className="mt-1 text-sm text-gray-500 flex gap-3">
+              {treatment.duration && (
+                <span>
+                  <strong>Duration:</strong> {treatment.duration}
+                </span>
               )}
-              <div className="mt-1 text-sm text-gray-500 flex gap-3">
-                {treatment.duration && (
-                  <span>
-                    <strong>Duration:</strong> {treatment.duration}
-                  </span>
-                )}
-                {treatment.price && (
-                  <span>
-                    <strong>Price:</strong> {treatment.price}
-                  </span>
-                )}
-              </div>
+              {treatment.price && (
+                <span>
+                  <strong>Price:</strong> {treatment.price}
+                </span>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="flex gap-2 items-end mb-4">
         <div>

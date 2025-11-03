@@ -37,6 +37,7 @@ export default function NavBar() {
 
           <div className="flex items-center gap-2">
             <NotificationBell />
+
             <NavLink
               to="/behandlinger"
               className={({ isActive }) =>
@@ -44,14 +45,6 @@ export default function NavBar() {
               }
             >
               Treatments
-            </NavLink>
-            <NavLink
-              to="/book"
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? linkActive : linkInactive}`
-              }
-            >
-              Order Appointment
             </NavLink>
 
             {!isAuthed ? (

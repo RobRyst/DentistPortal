@@ -28,27 +28,31 @@ namespace backend.Controllers
 
         [HttpGet("available-slots")]
         public async Task<IEnumerable<AvailabilitySlotDto>> GetSlots(
-    [FromQuery] int providerId,
-    [FromQuery] DateTime fromUtc,
-    [FromQuery] DateTime toUtc,
-    [FromQuery] int? durationMinutes = null,
-    [FromQuery] int? stepMinutes = null
-)
+        [FromQuery] int providerId,
+        [FromQuery] DateTime fromUtc,
+        [FromQuery] DateTime toUtc,
+        [FromQuery] int? durationMinutes = null,
+        [FromQuery] int? stepMinutes = null
+    )
         {
+            var nowUtc = DateTime.UtcNow;
+            var effectiveFrom = fromUtc < nowUtc ? nowUtc : fromUtc;
+            if (effectiveFrom >= toUtc)
+                return Array.Empty<AvailabilitySlotDto>();
+
             var availability = await _db.AvailabilitySlots
                 .Where(slot => slot.ProviderId == providerId &&
-                            slot.StartTime < toUtc &&
-                            slot.EndTime > fromUtc)
+                               slot.StartTime < toUtc &&
+                               slot.EndTime > effectiveFrom)
                 .OrderBy(slot => slot.StartTime)
                 .ToListAsync();
 
             if (availability.Count == 0) return Array.Empty<AvailabilitySlotDto>();
-
             var appts = await _db.Appointments
                 .Where(appointment => appointment.ProviderId == providerId &&
-                            appointment.Status != AppointmentStatus.Cancelled &&
-                            appointment.StartTime < toUtc &&
-                            appointment.EndTime > fromUtc)
+                                      appointment.Status != AppointmentStatus.Cancelled &&
+                                      appointment.StartTime < toUtc &&
+                                      appointment.EndTime > effectiveFrom)
                 .OrderBy(appointment => appointment.StartTime)
                 .ToListAsync();
 
@@ -59,15 +63,13 @@ namespace backend.Controllers
 
                 foreach (var busy in unavailable)
                 {
+                    var busystart = busy.StartTime;
+                    var busyend = busy.EndTime;
+
                     for (int i = 0; i < result.Count; i++)
                     {
                         var (start, end) = result[i];
-                        var busystart = busy.StartTime; var busyend = busy.EndTime;
-
-                        if (busyend <= start || busyend >= end) continue;
-
-                        var leftStart = start; var leftE = DateTime.MaxValue;
-                        var rightStart = DateTime.MinValue; var rightEnd = end;
+                        if (busyend <= start || busystart >= end) continue;
 
                         bool hasLeft = busystart > start;
                         bool hasRight = busyend < end;
@@ -76,6 +78,7 @@ namespace backend.Controllers
 
                         if (hasLeft)
                             result.Insert(i++, (start, busystart));
+
                         if (hasRight)
                             result.Insert(i, (busyend, end));
 
@@ -89,11 +92,13 @@ namespace backend.Controllers
             var freeWindows = new List<(DateTime s, DateTime e)>();
             foreach (var available in availability)
             {
-                var winStart = available.StartTime < fromUtc ? fromUtc : available.StartTime;
+                var winStart = available.StartTime < effectiveFrom ? effectiveFrom : available.StartTime;
                 var winEnd = available.EndTime > toUtc ? toUtc : available.EndTime;
                 if (winEnd <= winStart) continue;
 
-                var overlappingAppts = appts.Where(busy => busy.StartTime < winEnd && busy.EndTime > winStart);
+                var overlappingAppts = appts.Where(busy =>
+                    busy.StartTime < winEnd && busy.EndTime > winStart);
+
                 var pieces = SubtractBusy(winStart, winEnd, overlappingAppts);
                 freeWindows.AddRange(pieces);
             }
@@ -104,7 +109,7 @@ namespace backend.Controllers
             int duration = Math.Max(0, durationMinutes ?? 0);
             int step = Math.Max(1, stepMinutes ?? (duration > 0 ? duration : 1));
 
-            foreach (var (start, end) in freeWindows.OrderBy(w => w.s))
+            foreach (var (s, e) in freeWindows.OrderBy(w => w.s))
             {
                 if (duration <= 0)
                 {
@@ -112,14 +117,14 @@ namespace backend.Controllers
                     {
                         Id = idSeq++,
                         ProviderId = providerId,
-                        StartTime = start,
-                        EndTime = end
+                        StartTime = s,
+                        EndTime = e
                     });
                     continue;
                 }
 
-                var t = start;
-                while (t.AddMinutes(duration) <= end)
+                var t = s;
+                while (t.AddMinutes(duration) <= e)
                 {
                     slots.Add(new AvailabilitySlotDto
                     {
@@ -138,10 +143,18 @@ namespace backend.Controllers
         [HttpPost("bookings")]
         public async Task<ActionResult<AppointmentDto>> Book([FromBody] BookAppointmentRequest dto)
         {
+            if (dto.EndTime <= dto.StartTime)
+                return BadRequest("Sluttid må være etter starttid.");
+
+            var nowUtc = DateTime.UtcNow;
+            if (dto.StartTime < nowUtc)
+                return BadRequest("Du kan ikke booke en time i fortiden.");
+
             bool clash = await _db.Appointments.AnyAsync(appointment =>
                 appointment.ProviderId == dto.ProviderId &&
                 appointment.Status != AppointmentStatus.Cancelled &&
-                appointment.StartTime < dto.EndTime && dto.StartTime < appointment.EndTime);
+                appointment.StartTime < dto.EndTime &&
+                dto.StartTime < appointment.EndTime);
 
             if (clash) return Conflict("Time allerede booket.");
 
@@ -175,8 +188,10 @@ namespace backend.Controllers
                 try { await _mail.SendAsync(user.Email!, subject, text); }
                 catch (Exception ex) { _log.LogWarning(ex, "Kunne ikke sende mail til: {Email}", user.Email); }
             }
+
             return Ok(appointment.ToDto());
         }
+
 
         [HttpGet("my-appointments")]
         public async Task<IEnumerable<AppointmentSummaryDto>> MyAppointments()
