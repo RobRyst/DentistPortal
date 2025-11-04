@@ -3,6 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { tokenStorage } from "../../api/token";
 import { loginStart, verify2FA } from "../../api/authAPI";
+import { jwtDecode } from "jwt-decode";
+
+type JwtPayload = {
+  role?: string | string[];
+  roles?: string[];
+  [key: string]: any;
+};
 
 export default function LoginPage() {
   const [step, setStep] = useState<"creds" | "code">("creds");
@@ -48,7 +55,28 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await verify2FA({ userId, code });
-      tokenStorage.set(res.data.token);
+      const token = res.data.token;
+      tokenStorage.set(token);
+
+      let isAdmin = false;
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+
+        let roles: string[] = [];
+
+        if (Array.isArray(decoded.roles)) {
+          roles = decoded.roles;
+        } else if (Array.isArray(decoded.role)) {
+          roles = decoded.role;
+        } else if (typeof decoded.role === "string") {
+          roles = [decoded.role];
+        }
+
+        isAdmin = roles.includes("Admin") || roles.includes("Provider");
+      } catch {
+        isAdmin = false;
+      }
+
       Swal.fire({
         position: "center",
         icon: "success",
@@ -56,7 +84,11 @@ export default function LoginPage() {
         showConfirmButton: false,
         timer: 1200,
       });
-      setTimeout(() => navigate("/", { replace: true }), 800);
+
+      setTimeout(() => {
+        if (isAdmin) navigate("/admin/slots", { replace: true });
+        else navigate("/", { replace: true });
+      }, 800);
     } catch {
       Swal.fire({
         icon: "error",
