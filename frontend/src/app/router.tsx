@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Layout from "../pages/layouts/Layout";
 import LoginPage from "../pages/Auth/LoginPage";
@@ -21,6 +21,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <AppointmentListPage /> },
       { path: "book", element: <BookingPage /> },
+      { path: "admin", element: <Navigate to="admin/slots" replace /> },
       { path: "admin/slots", element: <SlotsAdminPage /> },
       { path: "behandlinger", element: <TreatmentsPage /> },
     ],
