@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using backend.Domains.Entities;
 using backend.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -9,14 +10,17 @@ namespace backend.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class UsersController(UserManager<AppUser> users) : ControllerBase
+    public class UserController(UserManager<AppUser> users) : ControllerBase
     {
         private readonly UserManager<AppUser> _users = users;
 
         [HttpGet("me")]
         public async Task<ActionResult<AppUserDto>> Me()
         {
-            var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
+            var id = GetUserId();
+            if (string.IsNullOrWhiteSpace(id))
+                return Unauthorized();
+
             var user = await _users.FindByIdAsync(id);
             if (user is null) return NotFound();
 
@@ -36,7 +40,10 @@ namespace backend.Controllers
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateAppUserRequest dto)
         {
-            var id = User.FindFirst(c => c.Type.Contains("sub"))!.Value;
+            var id = GetUserId();
+            if (string.IsNullOrWhiteSpace(id))
+                return Unauthorized();
+
             var user = await _users.FindByIdAsync(id);
             if (user is null) return NotFound();
 
@@ -64,5 +71,10 @@ namespace backend.Controllers
             await _users.AddToRoleAsync(user, dto.Role);
             return Ok();
         }
+
+        private string GetUserId()
+            => User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst(c => c.Type.Contains("sub"))?.Value
+            ?? "";
     }
 }

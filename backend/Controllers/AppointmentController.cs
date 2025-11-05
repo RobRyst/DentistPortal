@@ -11,7 +11,6 @@ using backend.Domains.Interfaces;
 
 namespace backend.Controllers
 {
-
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -28,12 +27,12 @@ namespace backend.Controllers
 
         [HttpGet("available-slots")]
         public async Task<IEnumerable<AvailabilitySlotDto>> GetSlots(
-        [FromQuery] int providerId,
-        [FromQuery] DateTime fromUtc,
-        [FromQuery] DateTime toUtc,
-        [FromQuery] int? durationMinutes = null,
-        [FromQuery] int? stepMinutes = null
-    )
+            [FromQuery] int providerId,
+            [FromQuery] DateTime fromUtc,
+            [FromQuery] DateTime toUtc,
+            [FromQuery] int? durationMinutes = null,
+            [FromQuery] int? stepMinutes = null
+        )
         {
             var nowUtc = DateTime.UtcNow;
             var effectiveFrom = fromUtc < nowUtc ? nowUtc : fromUtc;
@@ -140,6 +139,37 @@ namespace backend.Controllers
             return slots;
         }
 
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin,Provider")]
+        public async Task<IEnumerable<AppointmentDto>> GetAll(
+        [FromQuery] DateTime? fromUtc,
+        [FromQuery] DateTime? toUtc,
+        [FromQuery] int? providerId)
+        {
+            var query = _db.Appointments.AsQueryable();
+
+            if (fromUtc.HasValue)
+            {
+                query = query.Where(a => a.EndTime >= fromUtc.Value);
+            }
+
+            if (toUtc.HasValue)
+            {
+                query = query.Where(a => a.StartTime <= toUtc.Value);
+            }
+
+            if (providerId.HasValue)
+            {
+                query = query.Where(a => a.ProviderId == providerId.Value);
+            }
+
+            var items = await query
+                .OrderBy(a => a.StartTime)
+                .ToListAsync();
+
+            return items.Select(a => a.ToDto());
+        }
+
         [HttpPost("bookings")]
         public async Task<ActionResult<AppointmentDto>> Book([FromBody] BookAppointmentRequest dto)
         {
@@ -161,13 +191,16 @@ namespace backend.Controllers
             var userId = GetUserId();
             if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
+            var user = await _users.FindByIdAsync(userId);
+            var noteText = BuildAppointmentNotes(userId, user, dto.Notes);
+
             var appointment = new Appointment
             {
                 UserId = userId,
                 ProviderId = dto.ProviderId,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Notes = dto.Notes
+                Notes = noteText
             };
 
             _db.Appointments.Add(appointment);
@@ -180,18 +213,19 @@ namespace backend.Controllers
             });
             await _db.SaveChangesAsync();
 
-            var user = await _users.FindByIdAsync(userId);
             if (!string.IsNullOrWhiteSpace(user?.Email))
             {
                 var subject = "Timebestilling bekreftet";
-                var text = $"Hei {user.FirstName ?? ""}! Din time er bekreftet: {appointment.StartTime:dddd dd.MM.yyyy HH:mm}.";
+                var greetingName = !string.IsNullOrWhiteSpace(user.FirstName)
+                    ? user.FirstName
+                    : user.Email;
+                var text = $"Hei {greetingName}! Din time er bekreftet: {appointment.StartTime:dddd dd.MM.yyyy HH:mm}.";
                 try { await _mail.SendAsync(user.Email!, subject, text); }
                 catch (Exception ex) { _log.LogWarning(ex, "Kunne ikke sende mail til: {Email}", user.Email); }
             }
 
             return Ok(appointment.ToDto());
         }
-
 
         [HttpGet("my-appointments")]
         public async Task<IEnumerable<AppointmentSummaryDto>> MyAppointments()
@@ -293,9 +327,13 @@ namespace backend.Controllers
             bool clash = await _db.Appointments.AnyAsync(appointment =>
                 appointment.ProviderId == dto.ProviderId &&
                 appointment.Status != AppointmentStatus.Cancelled &&
-                appointment.StartTime < dto.EndTime && dto.StartTime < appointment.EndTime);
+                appointment.StartTime < dto.EndTime &&
+                dto.StartTime < appointment.EndTime);
 
             if (clash) return Conflict("Time already booked.");
+
+            var user = await _users.FindByIdAsync(dto.UserId);
+            var noteText = BuildAppointmentNotes(dto.UserId, user, dto.Notes);
 
             var appointment = new Appointment
             {
@@ -303,7 +341,7 @@ namespace backend.Controllers
                 ProviderId = dto.ProviderId,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Notes = dto.Notes
+                Notes = noteText
             };
 
             _db.Appointments.Add(appointment);
@@ -330,11 +368,34 @@ namespace backend.Controllers
             await _db.SaveChangesAsync();
             return NoContent();
         }
+
         private string GetUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirst(c => c.Type.Contains("sub"))?.Value
             ?? "";
+
+        private static string BuildAppointmentNotes(string userId, AppUser? user, string? rawNotes)
+        {
+            string patientIdentifier;
+            if (!string.IsNullOrWhiteSpace(user?.FirstName) || !string.IsNullOrWhiteSpace(user?.LastName))
+            {
+                patientIdentifier = $"{user?.FirstName} {user?.LastName}".Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(user?.Email))
+            {
+                patientIdentifier = user.Email!;
+            }
+            else
+            {
+                patientIdentifier = userId;
+            }
+
+            var treatmentPart = rawNotes?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(treatmentPart))
+                return $"{patientIdentifier} – {treatmentPart}";
+
+            return $"{patientIdentifier}";
+        }
     }
-
-
 }

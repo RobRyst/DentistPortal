@@ -5,6 +5,9 @@ import { userRegister } from "../../api/authAPI";
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
@@ -12,7 +15,13 @@ export default function RegisterPage() {
     event.preventDefault();
     setLoading(true);
     try {
-      await userRegister({ email, password });
+      await userRegister({
+        email,
+        password,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        phoneNumber: phoneNumber || undefined,
+      });
       nav("/login", { replace: true });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
@@ -22,6 +31,8 @@ export default function RegisterPage() {
             e.response.data.map((x: any) => x.description || x.code).join("\n")
           : e?.response?.data ?? "Registration failed";
       alert(msg);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -29,12 +40,31 @@ export default function RegisterPage() {
     <main style={{ maxWidth: 360, margin: "10vh auto" }}>
       <h1>Registrer</h1>
       <form onSubmit={onSubmit}>
+        <label>Fornavn</label>
+        <input
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+        />
+
+        <label>Etternavn</label>
+        <input
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+        />
+
+        <label>Telefon</label>
+        <input
+          value={phoneNumber}
+          onChange={(event) => setPhoneNumber(event.target.value)}
+        />
+
         <label>E-post</label>
         <input
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
         />
+
         <label>Passord</label>
         <input
           type="password"
@@ -42,6 +72,7 @@ export default function RegisterPage() {
           onChange={(event) => setPassword(event.target.value)}
           required
         />
+
         <button type="submit" disabled={loading}>
           {loading ? "Oppretter..." : "Opprett konto"}
         </button>

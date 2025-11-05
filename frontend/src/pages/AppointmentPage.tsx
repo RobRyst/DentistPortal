@@ -8,7 +8,7 @@ function groupAndSort(items: AppointmentSummaryDto[]) {
   const now = new Date();
 
   const upcoming = items
-    .filter((a) => new Date(a.startTime) >= now)
+    .filter((appointment) => new Date(appointment.startTime) >= now)
     .sort(
       (a, b) =>
         new Date(a.startTime).getTime() - new Date(b.startTime).getTime()

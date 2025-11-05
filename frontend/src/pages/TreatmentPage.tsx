@@ -23,7 +23,7 @@ const treatments: Treatment[] = [
     description:
       "Professional whitening treatment to remove stains and brighten your smile.",
     duration: "60 minutes",
-    price: "1,200 NOK",
+    price: "1 200 NOK",
   },
   {
     id: 3,
@@ -39,7 +39,7 @@ const treatments: Treatment[] = [
     description:
       "Endodontic treatment for infected or damaged tooth nerves, preserving the tooth.",
     duration: "90 minutes",
-    price: "2,500 NOK",
+    price: "2 500 NOK",
   },
   {
     id: 5,

@@ -1,0 +1,228 @@
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  adminListAppointments,
+  type AppointmentDto,
+} from "../../api/appointments";
+
+function fmtRange(startIso: string, endIso: string) {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+
+  try {
+    return new Intl.DateTimeFormat("no-NO", {
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatRange(start, end);
+  } catch {
+    const fmt = new Intl.DateTimeFormat("no-NO", {
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${fmt.format(start)} – ${fmt.format(end)}`;
+  }
+}
+
+function toUtcStartOfDayIso(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const local = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const utc = new Date(local.getTime() - local.getTimezoneOffset() * 60000);
+  return utc.toISOString();
+}
+
+function toUtcEndOfDayIso(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const local = new Date(year, month - 1, day, 23, 59, 59, 999);
+  const utc = new Date(local.getTime() - local.getTimezoneOffset() * 60000);
+  return utc.toISOString();
+}
+
+function extractPatientAndDetails(notes?: string | null) {
+  if (!notes) return { patient: "-", details: "" };
+
+  const prefix = "Patient:";
+  if (!notes.startsWith(prefix)) {
+    return { patient: "-", details: notes };
+  }
+
+  const afterPrefix = notes.substring(prefix.length).trim();
+  const [patientPart, ...rest] = afterPrefix.split("–");
+  const patient = patientPart.trim();
+  const details = rest.join("–").trim();
+
+  return { patient: patient || "-", details };
+}
+
+export default function AdminAppointmentsPage() {
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const [fromDate, setFromDate] = useState(todayIso);
+  const [toDate, setToDate] = useState(todayIso);
+  const [providerId, setProviderId] = useState<string>("");
+
+  const [items, setItems] = useState<AppointmentDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const fromUtc = useMemo(() => toUtcStartOfDayIso(fromDate), [fromDate]);
+  const toUtc = useMemo(() => toUtcEndOfDayIso(toDate), [toDate]);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const params: { fromUtc?: string; toUtc?: string; providerId?: number } =
+        {
+          fromUtc,
+          toUtc,
+        };
+      if (providerId.trim() !== "") {
+        const idNum = Number(providerId);
+        if (!Number.isNaN(idNum)) params.providerId = idNum;
+      }
+
+      const data = await adminListAppointments(params);
+      setItems(data);
+    } catch (e: any) {
+      setErr(e?.response?.data ?? "Kunne ikke laste avtaler.");
+    } finally {
+      setLoading(false);
+    }
+  }, [fromUtc, toUtc, providerId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return (
+    <main className="mx-auto max-w-5xl p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Alle avtaler</h1>
+          <p className="text-sm text-zinc-600">
+            Administrasjonsoversikt over alle bookede timer.
+          </p>
+        </div>
+        <button
+          onClick={refresh}
+          className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+        >
+          Oppdater
+        </button>
+      </div>
+
+      <section className="rounded-xl border bg-white p-4">
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">
+              Fra dato
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">
+              Til dato
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">
+              Behandler-ID (valgfritt)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={providerId}
+              onChange={(e) => setProviderId(e.target.value)}
+              className="border rounded px-3 py-2 text-sm w-28"
+            />
+          </div>
+        </div>
+      </section>
+
+      {loading && <p className="text-zinc-600">Laster avtaler…</p>}
+      {err && <p className="text-red-600">{err}</p>}
+
+      {!loading && !err && items.length === 0 && (
+        <p className="text-sm text-zinc-600">Ingen avtaler i valgt periode.</p>
+      )}
+
+      {!loading && !err && items.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border bg-white">
+          <table className="min-w-full text-sm">
+            <thead className="bg-zinc-50">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-zinc-700">
+                  Tid
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-zinc-700">
+                  Pasient
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-zinc-700">
+                  Behandling
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-zinc-700">
+                  Behandler
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-zinc-700">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {items.map((appt) => {
+                const { patient, details } = extractPatientAndDetails(
+                  appt.notes
+                );
+                const lowerStatus = appt.status.toLowerCase();
+
+                const badgeColor =
+                  lowerStatus === "cancelled"
+                    ? "bg-red-100 text-red-800"
+                    : lowerStatus === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-zinc-100 text-zinc-800";
+
+                return (
+                  <tr key={appt.id} className="hover:bg-zinc-50">
+                    <td className="px-3 py-2 whitespace-nowrap capitalize">
+                      {fmtRange(appt.startTime, appt.endTime)}
+                    </td>
+                    <td className="px-3 py-2 font-medium">{patient}</td>
+                    <td className="px-3 py-2">
+                      {details || <span className="text-zinc-500">–</span>}
+                    </td>
+                    <td className="px-3 py-2">#{appt.providerId}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${badgeColor}`}
+                      >
+                        {appt.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </main>
+  );
+}
