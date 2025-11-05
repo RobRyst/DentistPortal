@@ -1,4 +1,4 @@
-import { http } from "./Http";
+import { http } from "./http";
 
 export type AvailabilitySlotDto = {
   id: number;

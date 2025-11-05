@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { tokenStorage } from "../api/Token";
+import { tokenStorage } from "../api/token";
 import NotificationBell from "./NotificationBell";
 import { jwtDecode } from "jwt-decode";
 

@@ -1,6 +1,6 @@
 import axios from "axios";
-import { env } from "./Env";
-import { tokenStorage } from "./Token";
+import { env } from "./env";
+import { tokenStorage } from "./token";
 
 export const http = axios.create({
   baseURL: env.API_BASE_URL,

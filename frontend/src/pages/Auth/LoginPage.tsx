@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { tokenStorage } from "../../api/Token";
+import { tokenStorage } from "../../api/token";
 import { loginStart, verify2FA } from "../../api/authAPI";
 import { jwtDecode } from "jwt-decode";
 

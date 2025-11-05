@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { tokenStorage } from "../api/Token";
+import { tokenStorage } from "../api/token";
 import type { ReactNode } from "react";
 
 type Props = { children: ReactNode };

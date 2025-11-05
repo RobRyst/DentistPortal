@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { tokenStorage } from "../api/Token";
+import { tokenStorage } from "../api/token";
 import type { JSX } from "react";
 
 type JwtPayload = {
