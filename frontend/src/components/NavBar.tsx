@@ -106,6 +106,15 @@ export default function NavBar() {
               </NavLink>
             )}
 
+            <NavLink
+              to="/kontakt"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? linkActive : linkInactive}`
+              }
+            >
+              Kontakt oss
+            </NavLink>
+
             {!isAuthed ? (
               <NavLink
                 to="/login"

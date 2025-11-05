@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { env } from "../../api/Env";
+import { env } from "../../api/env";
 import { tokenStorage } from "../../api/token";
 import { useNavigate } from "react-router-dom";
 
