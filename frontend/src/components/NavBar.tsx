@@ -1,17 +1,64 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { tokenStorage } from "../api/token";
+import { tokenStorage } from "../api/Token";
 import NotificationBell from "./NotificationBell";
+import { jwtDecode } from "jwt-decode";
+
+type JwtPayload = {
+  role?: string | string[];
+  roles?: string[];
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"?:
+    | string
+    | string[];
+  [key: string]: unknown;
+};
 
 export default function NavBar() {
   const [isAuthed, setIsAuthed] = useState<boolean>(
     Boolean(tokenStorage.get())
   );
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const nav = useNavigate();
 
   useEffect(() => {
+    const checkRole = () => {
+      const token = tokenStorage.get();
+      if (!token) {
+        setIsAuthed(false);
+        setIsAdmin(false);
+        return;
+      }
+
+      setIsAuthed(true);
+
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+
+        const rawRoles =
+          decoded.roles ??
+          decoded.role ??
+          decoded[
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+          ];
+
+        let roles: string[] = [];
+
+        if (Array.isArray(rawRoles)) {
+          roles = rawRoles.map(String);
+        } else if (typeof rawRoles === "string") {
+          roles = [rawRoles];
+        }
+
+        setIsAdmin(roles.includes("Admin") || roles.includes("Provider"));
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+
+    checkRole();
+
     const onStorage = (event: StorageEvent) => {
-      if (event.key === "token") setIsAuthed(Boolean(tokenStorage.get()));
+      if (event.key === "token") checkRole();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -20,6 +67,7 @@ export default function NavBar() {
   const logout = () => {
     tokenStorage.clear();
     setIsAuthed(false);
+    setIsAdmin(false);
     nav("/login", { replace: true });
   };
 
@@ -46,6 +94,17 @@ export default function NavBar() {
             >
               Treatments
             </NavLink>
+
+            {isAdmin && (
+              <NavLink
+                to="/admin/slots"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : linkInactive}`
+                }
+              >
+                Admin
+              </NavLink>
+            )}
 
             {!isAuthed ? (
               <NavLink

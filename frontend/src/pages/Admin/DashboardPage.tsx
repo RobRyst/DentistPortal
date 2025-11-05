@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { env } from "../../api/env";
-import { tokenStorage } from "../../api/token";
+import { env } from "../../api/Env";
+import { tokenStorage } from "../../api/Token";
 import { useNavigate } from "react-router-dom";
 
 type MeResponse = { roles?: string[] };

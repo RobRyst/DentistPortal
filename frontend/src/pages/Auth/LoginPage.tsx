@@ -1,15 +1,17 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { tokenStorage } from "../../api/token";
+import { tokenStorage } from "../../api/Token";
 import { loginStart, verify2FA } from "../../api/authAPI";
 import { jwtDecode } from "jwt-decode";
 
 type JwtPayload = {
   role?: string | string[];
   roles?: string[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"?:
+    | string
+    | string[];
+  [key: string]: unknown;
 };
 
 export default function LoginPage() {
@@ -63,15 +65,16 @@ export default function LoginPage() {
       try {
         const decoded = jwtDecode<JwtPayload>(token);
 
-        let roles: string[] = [];
+        const rawRoles =
+          decoded.roles ??
+          decoded.role ??
+          decoded[
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+          ];
 
-        if (Array.isArray(decoded.roles)) {
-          roles = decoded.roles;
-        } else if (Array.isArray(decoded.role)) {
-          roles = decoded.role;
-        } else if (typeof decoded.role === "string") {
-          roles = [decoded.role];
-        }
+        let roles: string[] = [];
+        if (Array.isArray(rawRoles)) roles = rawRoles.map(String);
+        else if (typeof rawRoles === "string") roles = [rawRoles];
 
         isAdmin = roles.includes("Admin") || roles.includes("Provider");
       } catch {

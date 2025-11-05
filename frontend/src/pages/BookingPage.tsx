@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { DateTime } from "luxon";
-import { getAvailableSlots, bookAppointment } from "../api/appointments";
+import { getAvailableSlots, bookAppointment } from "../api/Appointments";
 
 const PROVIDER_ID = 1;
 const OSLO = "Europe/Oslo";

@@ -7,6 +7,7 @@ import AppointmentListPage from "../pages/AppointmentPage";
 import BookingPage from "../pages/BookingPage";
 import SlotsAdminPage from "../pages/Admin/SlotsAdminPage";
 import TreatmentsPage from "../pages/TreatmentPage";
+import AdminRoute from "../components/AdminRoute";
 
 const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -22,7 +23,14 @@ const router = createBrowserRouter([
       { index: true, element: <AppointmentListPage /> },
       { path: "book", element: <BookingPage /> },
       { path: "admin", element: <Navigate to="admin/slots" replace /> },
-      { path: "admin/slots", element: <SlotsAdminPage /> },
+      {
+        path: "admin/slots",
+        element: (
+          <AdminRoute>
+            <SlotsAdminPage />
+          </AdminRoute>
+        ),
+      },
       { path: "behandlinger", element: <TreatmentsPage /> },
     ],
   },

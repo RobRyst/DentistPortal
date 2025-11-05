@@ -5,7 +5,7 @@ import {
   adminDeleteSlot,
   adminUpdateSlot,
   type AvailabilitySlotDto,
-} from "../../api/appointments";
+} from "../../api/Appointments";
 
 const PROVIDER_ID = 1;
 
