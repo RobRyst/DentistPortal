@@ -5,7 +5,7 @@ import {
   adminDeleteSlot,
   adminUpdateSlot,
   type AvailabilitySlotDto,
-} from "../../api/Appointments";
+} from "../../api/appointments";
 
 const PROVIDER_ID = 1;
 
@@ -161,6 +161,7 @@ export default function SlotsAdminPage() {
     try {
       const data = await adminListSlots(PROVIDER_ID, fromUtc, toUtc);
       setSlots(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setErr(e?.response?.data ?? "Failed to fetch availability.");
     } finally {
@@ -184,6 +185,7 @@ export default function SlotsAdminPage() {
       const endTime = toUtcIsoLocal(cDate, cEnd);
       await adminCreateSlot({ providerId: PROVIDER_ID, startTime, endTime });
       await refresh();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       alert(e?.response?.data ?? "Could not create slot.");
     }
@@ -194,6 +196,7 @@ export default function SlotsAdminPage() {
     try {
       await adminDeleteSlot(id);
       await refresh();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       alert(e?.response?.data ?? "Could not delete slot.");
     }
@@ -209,6 +212,7 @@ export default function SlotsAdminPage() {
         endTime: endIso,
       });
       await refresh();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       alert(e?.response?.data ?? "Could not update slot.");
     }

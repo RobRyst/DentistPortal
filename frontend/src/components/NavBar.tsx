@@ -112,7 +112,7 @@ export default function NavBar() {
                 `${linkBase} ${isActive ? linkActive : linkInactive}`
               }
             >
-              Kontakt oss
+              Contact
             </NavLink>
 
             {!isAuthed ? (

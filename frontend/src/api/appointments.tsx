@@ -27,6 +27,7 @@ export type AppointmentSummaryDto = {
   startTime: string;
   endTime: string;
   status: string;
+  notes?: string | null;
 };
 
 export type BookAppointmentRequest = {

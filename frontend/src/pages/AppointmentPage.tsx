@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getMyAppointments,
   type AppointmentSummaryDto,
-} from "../api/Appointments";
+} from "../api/appointments";
 
 function groupAndSort(items: AppointmentSummaryDto[]) {
   const now = new Date();
@@ -61,6 +61,7 @@ export default function AppointmentListPage() {
     try {
       const data = await getMyAppointments();
       if (mountedRef.current) setItems(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (mountedRef.current) {
         setError(e?.response?.data ?? "Could not load your appointments.");
@@ -147,17 +148,25 @@ function AppointmentList({
             key={appointment.id}
             className="border rounded p-3 flex justify-between items-center"
           >
-            <span
-              className={`capitalize ${
-                isCancelled ? "line-through opacity-70" : ""
-              }`}
-            >
-              {fmtRange(appointment.startTime, appointment.endTime)}
-            </span>
+            <div className="flex flex-col">
+              {appointment.notes && (
+                <span className="text-sm font-medium">{appointment.notes}</span>
+              )}
+              <span
+                className={`capitalize ${
+                  isCancelled ? "line-through opacity-70" : ""
+                }`}
+              >
+                {fmtRange(appointment.startTime, appointment.endTime)}
+              </span>
+            </div>
+
             <span
               className={`text-xs px-2 py-1 rounded ${
                 isCancelled
                   ? "bg-red-100 text-red-800"
+                  : appointment.status.toLowerCase() === "completed"
+                  ? "bg-green-100 text-green-800"
                   : "bg-zinc-100 text-zinc-800"
               }`}
               title={appointment.status}

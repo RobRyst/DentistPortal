@@ -14,10 +14,12 @@ export default function RegisterPage() {
     try {
       await userRegister({ email, password });
       nav("/login", { replace: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       const msg =
         e?.response?.data && Array.isArray(e.response.data)
-          ? e.response.data.map((x: any) => x.description || x.code).join("\n")
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            e.response.data.map((x: any) => x.description || x.code).join("\n")
           : e?.response?.data ?? "Registration failed";
       alert(msg);
     }

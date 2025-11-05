@@ -18,6 +18,7 @@ namespace backend.DTOs
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string Status { get; set; } = "Scheduled";
+        public string? Notes { get; set; } 
     }
 
     public class BookAppointmentRequest

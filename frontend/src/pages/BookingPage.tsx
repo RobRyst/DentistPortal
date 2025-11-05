@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { DateTime } from "luxon";
-import { getAvailableSlots, bookAppointment } from "../api/Appointments";
+import { getAvailableSlots, bookAppointment } from "../api/appointments";
 
 const PROVIDER_ID = 1;
 const OSLO = "Europe/Oslo";
@@ -89,6 +89,7 @@ export default function BookingPage() {
         stepMinutes: 15,
       });
       setSlots(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setError(e?.response?.data ?? "Could not load available times.");
     } finally {
@@ -119,6 +120,7 @@ export default function BookingPage() {
       });
       navigate("/", { replace: true });
       setTimeout(() => navigate("/", { replace: true }), 1500);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e?.response?.status === 409)
         alert("That time is no longer available.");

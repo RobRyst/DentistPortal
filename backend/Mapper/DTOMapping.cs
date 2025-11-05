@@ -35,7 +35,8 @@ namespace backend.Mapper
             Id = appointment.Id,
             StartTime = appointment.StartTime,
             EndTime = appointment.EndTime,
-            Status = appointment.Status.ToString()
+            Status = appointment.Status.ToString(),
+            Notes = appointment.Notes
         };
 
         public static NotificationDto ToDto(this Notification notification) => new()

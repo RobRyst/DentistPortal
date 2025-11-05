@@ -199,11 +199,31 @@ namespace backend.Controllers
             var userId = GetUserId();
             if (string.IsNullOrWhiteSpace(userId)) return Array.Empty<AppointmentSummaryDto>();
 
-            return (await _db.Appointments
+            var nowUtc = DateTime.UtcNow;
+
+            var appointments = await _db.Appointments
                 .Where(appointment => appointment.UserId == userId)
                 .OrderByDescending(appointment => appointment.StartTime)
-                .ToListAsync())
-                .Select(appointment => appointment.ToSummary());
+                .ToListAsync();
+
+            return appointments.Select(appointment =>
+            {
+                var status = appointment.Status;
+                if (appointment.EndTime < nowUtc &&
+                    (status == AppointmentStatus.Scheduled || status == AppointmentStatus.Confirmed))
+                {
+                    status = AppointmentStatus.Completed;
+                }
+
+                return new AppointmentSummaryDto
+                {
+                    Id = appointment.Id,
+                    StartTime = appointment.StartTime,
+                    EndTime = appointment.EndTime,
+                    Status = status.ToString(),
+                    Notes = appointment.Notes
+                };
+            });
         }
 
         [HttpPost("{id}/cancel")]
