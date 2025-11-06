@@ -69,10 +69,10 @@ public class AuthController(
         {
             if (string.IsNullOrWhiteSpace(e) || !e.Contains('@')) return "****";
             var parts = e.Split('@');
-            string m1 = parts[0].Length <= 1 ? "*" : parts[0][0] + new string('*', Math.Max(1, parts[0].Length - 1));
+            string mask1 = parts[0].Length <= 1 ? "*" : parts[0][0] + new string('*', Math.Max(1, parts[0].Length - 1));
             string domain = parts[1];
-            string m2 = domain.Length <= 1 ? "*" : domain[0] + new string('*', Math.Max(1, domain.Length - 1));
-            return $"{m1}@{m2}";
+            string mask2 = domain.Length <= 1 ? "*" : domain[0] + new string('*', Math.Max(1, domain.Length - 1));
+            return $"{mask1}@{mask2}";
         }
 
         return Ok(new LoginStartResponse

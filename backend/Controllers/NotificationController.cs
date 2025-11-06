@@ -43,19 +43,19 @@ public class NotificationsController(ApplicationDbContext db, ILogger<Notificati
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
         var query = _db.Notifications
-            .Where(n => n.UserId == userId);
+            .Where(notification => notification.UserId == userId);
 
-        if (onlyUnread) query = query.Where(n => !n.IsRead);
+        if (onlyUnread) query = query.Where(notification => !notification.IsRead);
 
         var items = await query
-            .OrderByDescending(n => n.CreatedTime)
+            .OrderByDescending(notification => notification.CreatedTime)
             .Skip(skip).Take(Math.Clamp(take, 1, 100))
             .ToListAsync();
 
         return Ok(new NotificationListResponse
         {
             Count = items.Count,
-            Items = items.Select(n => n.ToDto()).ToList()
+            Items = items.Select(notification => notification.ToDto()).ToList()
         });
     }
 
@@ -65,12 +65,12 @@ public class NotificationsController(ApplicationDbContext db, ILogger<Notificati
         var userId = GetUserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var n = await _db.Notifications.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
-        if (n is null) return NotFound();
+        var notification = await _db.Notifications.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
+        if (notification is null) return NotFound();
 
-        if (!n.IsRead)
+        if (!notification.IsRead)
         {
-            n.IsRead = true;
+            notification.IsRead = true;
             await _db.SaveChangesAsync();
         }
         return NoContent();
@@ -82,7 +82,7 @@ public class NotificationsController(ApplicationDbContext db, ILogger<Notificati
         var userId = GetUserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var toUpdate = await _db.Notifications.Where(n => n.UserId == userId && !n.IsRead).ToListAsync();
+        var toUpdate = await _db.Notifications.Where(notification => notification.UserId == userId && !notification.IsRead).ToListAsync();
         if (toUpdate.Count > 0)
         {
             foreach (var n in toUpdate) n.IsRead = true;

@@ -24,10 +24,10 @@ namespace backend.Controllers
                 .Where(slot => slot.ProviderId == providerId &&
                             slot.StartTime >= fromUtc &&
                             slot.EndTime <= toUtc)
-                .OrderBy(s => s.StartTime)
+                .OrderBy(slot => slot.StartTime)
                 .ToListAsync();
 
-            return items.Select(s => s.ToDto());
+            return items.Select(slot => slot.ToDto());
         }
 
         [HttpPost]

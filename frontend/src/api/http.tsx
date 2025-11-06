@@ -1,5 +1,5 @@
 import axios from "axios";
-import { env } from "./env";
+import { env } from "./Env";
 import { tokenStorage } from "./token";
 
 export const http = axios.create({
@@ -13,7 +13,7 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  (r) => r,
+  (res) => res,
   (err) => {
     if (err?.response?.status === 401) {
       tokenStorage.clear();

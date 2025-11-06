@@ -1,0 +1,16 @@
+.embedded-agent-container .__chat .__input,
+.chat-button-variant-2 .__chat .__input {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border-radius: 9999px;
+}
+
+.embedded-agent-container .__chat .__input::placeholder,
+.chat-button-variant-2 .__chat .__input::placeholder {
+  color: #6b7280 !important;
+}
+
+.chat-button-variant-2 .newVoiceButton {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}

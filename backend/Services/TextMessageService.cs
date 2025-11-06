@@ -41,10 +41,9 @@ namespace backend.Services
         }
     }
 
-    public sealed class DevSmsSender : ITextMessageService
+    public sealed class DevSmsSender(ILogger<DevSmsSender> log) : ITextMessageService
     {
-        private readonly ILogger<DevSmsSender> _log;
-        public DevSmsSender(ILogger<DevSmsSender> log) => _log = log;
+        private readonly ILogger<DevSmsSender> _log = log;
 
         public Task SendAsync(string toE164, string text)
         {

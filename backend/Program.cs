@@ -40,9 +40,9 @@ JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 // ------------------ Authentication (JWT) ------------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(o =>
+    .AddJwtBearer(options =>
     {
-        o.TokenValidationParameters = new TokenValidationParameters
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = false,
@@ -127,7 +127,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var osloNow = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"));
-    DateTime Day(DateTime d, int hour, int minutes) => new DateTime(d.Year, d.Month, d.Day, hour, minutes, 0, DateTimeKind.Local);
+    static DateTime Day(DateTime date, int hour, int minutes) => new(date.Year, date.Month, date.Day, hour, minutes, 0, DateTimeKind.Local);
 
     var todayLocal = osloNow.Date;
     var blocks = new[]
@@ -138,10 +138,10 @@ using (var scope = app.Services.CreateScope())
         (start: Day(todayLocal.AddDays(1), 13, 0), end: Day(todayLocal.AddDays(1), 16, 0)),
     };
 
-    foreach (var block in blocks)
+    foreach (var (start, end) in blocks)
     {
-        var startUtc = block.start.ToUniversalTime();
-        var endUtc   = block.end.ToUniversalTime();
+        var startUtc = start.ToUniversalTime();
+        var endUtc   = end.ToUniversalTime();
 
         bool exists = await db.AvailabilitySlots.AnyAsync(slot =>
             slot.ProviderId == 1 && slot.StartTime == startUtc && slot.EndTime == endUtc);

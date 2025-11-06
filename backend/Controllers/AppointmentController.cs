@@ -47,7 +47,7 @@ namespace backend.Controllers
                 .ToListAsync();
 
             if (availability.Count == 0) return Array.Empty<AvailabilitySlotDto>();
-            var appts = await _db.Appointments
+            var appointments = await _db.Appointments
                 .Where(appointment => appointment.ProviderId == providerId &&
                                       appointment.Status != AppointmentStatus.Cancelled &&
                                       appointment.StartTime < toUtc &&
@@ -95,10 +95,10 @@ namespace backend.Controllers
                 var winEnd = available.EndTime > toUtc ? toUtc : available.EndTime;
                 if (winEnd <= winStart) continue;
 
-                var overlappingAppts = appts.Where(busy =>
+                var overlappingApptointments = appointments.Where(busy =>
                     busy.StartTime < winEnd && busy.EndTime > winStart);
 
-                var pieces = SubtractBusy(winStart, winEnd, overlappingAppts);
+                var pieces = SubtractBusy(winStart, winEnd, overlappingApptointments);
                 freeWindows.AddRange(pieces);
             }
 
@@ -108,7 +108,7 @@ namespace backend.Controllers
             int duration = Math.Max(0, durationMinutes ?? 0);
             int step = Math.Max(1, stepMinutes ?? (duration > 0 ? duration : 1));
 
-            foreach (var (s, e) in freeWindows.OrderBy(w => w.s))
+            foreach (var (start, end) in freeWindows.OrderBy(w => w.s))
             {
                 if (duration <= 0)
                 {
@@ -116,23 +116,23 @@ namespace backend.Controllers
                     {
                         Id = idSeq++,
                         ProviderId = providerId,
-                        StartTime = s,
-                        EndTime = e
+                        StartTime = start,
+                        EndTime = end
                     });
                     continue;
                 }
 
-                var t = s;
-                while (t.AddMinutes(duration) <= e)
+                var time = start;
+                while (time.AddMinutes(duration) <= end)
                 {
                     slots.Add(new AvailabilitySlotDto
                     {
                         Id = idSeq++,
                         ProviderId = providerId,
-                        StartTime = t,
-                        EndTime = t.AddMinutes(duration)
+                        StartTime = time,
+                        EndTime = time.AddMinutes(duration)
                     });
-                    t = t.AddMinutes(step);
+                    time = time.AddMinutes(step);
                 }
             }
 
@@ -150,24 +150,24 @@ namespace backend.Controllers
 
             if (fromUtc.HasValue)
             {
-                query = query.Where(a => a.EndTime >= fromUtc.Value);
+                query = query.Where(appointment => appointment.EndTime >= fromUtc.Value);
             }
 
             if (toUtc.HasValue)
             {
-                query = query.Where(a => a.StartTime <= toUtc.Value);
+                query = query.Where(appointment => appointment.StartTime <= toUtc.Value);
             }
 
             if (providerId.HasValue)
             {
-                query = query.Where(a => a.ProviderId == providerId.Value);
+                query = query.Where(appointment => appointment.ProviderId == providerId.Value);
             }
 
             var items = await query
-                .OrderBy(a => a.StartTime)
+                .OrderBy(appointment => appointment.StartTime)
                 .ToListAsync();
 
-            return items.Select(a => a.ToDto());
+            return items.Select(appointment => appointment.ToDto());
         }
 
         [HttpPost("bookings")]

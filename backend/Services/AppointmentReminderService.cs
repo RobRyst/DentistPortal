@@ -6,18 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Services
 {
-    public class AppointmentReminderService : BackgroundService
+    public class AppointmentReminderService(
+        IServiceProvider services,
+        ILogger<AppointmentReminderService> log) : BackgroundService
     {
-        private readonly IServiceProvider _services;
-        private readonly ILogger<AppointmentReminderService> _log;
-
-        public AppointmentReminderService(
-            IServiceProvider services,
-            ILogger<AppointmentReminderService> log)
-        {
-            _services = services;
-            _log = log;
-        }
+        private readonly IServiceProvider _services = services;
+        private readonly ILogger<AppointmentReminderService> _log = log;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -34,11 +28,11 @@ namespace backend.Services
                     var next24h = nowUtc.AddHours(24);
 
                     var upcoming = await db.Appointments
-                        .Where(a =>
-                            a.Status != AppointmentStatus.Cancelled &&
-                            !a.Reminder24hSent &&
-                            a.StartTime > nowUtc &&
-                            a.StartTime <= next24h)
+                        .Where(appointment =>
+                            appointment.Status != AppointmentStatus.Cancelled &&
+                            !appointment.Reminder24hSent &&
+                            appointment.StartTime > nowUtc &&
+                            appointment.StartTime <= next24h)
                         .ToListAsync(stoppingToken);
 
                     if (upcoming.Count > 0)
@@ -48,13 +42,13 @@ namespace backend.Services
 
                     var osloTz = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
 
-                    foreach (var appt in upcoming)
+                    foreach (var appointment in upcoming)
                     {
-                        var user = await users.FindByIdAsync(appt.UserId);
+                        var user = await users.FindByIdAsync(appointment.UserId);
                         if (user is null)
                             continue;
 
-                        var localStart = TimeZoneInfo.ConvertTimeFromUtc(appt.StartTime, osloTz);
+                        var localStart = TimeZoneInfo.ConvertTimeFromUtc(appointment.StartTime, osloTz);
 
                         var subject = "Påminnelse om time hos RystDentist";
                         var name = string.IsNullOrWhiteSpace(user.FirstName)
@@ -81,11 +75,11 @@ namespace backend.Services
 
                         db.Notifications.Add(new Notification
                         {
-                            UserId = appt.UserId,
+                            UserId = appointment.UserId,
                             Message = $"Påminnelse: Du har time i morgen {localStart:dddd dd.MM.yyyy HH:mm}."
                         });
 
-                        appt.Reminder24hSent = true;
+                        appointment.Reminder24hSent = true;
                     }
 
                     await db.SaveChangesAsync(stoppingToken);
