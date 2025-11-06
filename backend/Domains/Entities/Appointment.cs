@@ -13,6 +13,7 @@ namespace backend.Domains.Entities
         public string? Notes { get; set; }
         [Timestamp] public byte[]? RowVersion { get; set; }
         public DateTime CreatedTime { get; set; } = DateTime.UtcNow;
+        public bool Reminder24hSent { get; set; } = false;
     }
     public class UpdateAppointmentRequest
     {

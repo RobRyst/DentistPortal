@@ -71,6 +71,7 @@ builder.Services.Configure<MailTrapOptions>(builder.Configuration.GetSection("Ma
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<TwoFactorAuthService>();
 builder.Services.Configure<TwilioOptions>(builder.Configuration.GetSection("Twilio"));
+builder.Services.AddHostedService<AppointmentReminderService>();
 
 bool twilioConfigured =
     !string.IsNullOrWhiteSpace(builder.Configuration["Twilio:AccountSid"]) &&

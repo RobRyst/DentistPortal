@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getMyAppointments,
   type AppointmentSummaryDto,
-} from "../api/appointments";
+} from "../api/Appointments";
 
 function groupAndSort(items: AppointmentSummaryDto[]) {
   const now = new Date();

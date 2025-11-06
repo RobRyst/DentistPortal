@@ -50,6 +50,17 @@ export async function getAvailableSlots(
   return data;
 }
 
+export async function adminUpdateAppointment(
+  id: number,
+  req: { startTime: string; endTime: string; notes?: string | null }
+) {
+  const { data } = await http.put<AppointmentDto>(
+    `/api/appointment/${id}`,
+    req
+  );
+  return data;
+}
+
 export async function bookAppointment(req: BookAppointmentRequest) {
   const { data } = await http.post<AppointmentDto>(
     `/api/appointment/bookings`,

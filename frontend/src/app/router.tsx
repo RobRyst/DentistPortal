@@ -27,7 +27,7 @@ const router = createBrowserRouter([
       { path: "admin", element: <Navigate to="admin/slots" replace /> },
       { path: "kontakt", element: <ContactPage /> },
       {
-        path: "admin/slots",
+        path: "admin/appointments",
         element: (
           <AdminRoute>
             <SlotsAdminPage />
@@ -35,7 +35,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "admin/appointments",
+        path: "admin/slots",
         element: (
           <AdminRoute>
             <AdminAppointmentsPage />

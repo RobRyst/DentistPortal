@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   adminListAppointments,
+  adminUpdateAppointment,
   type AppointmentDto,
-} from "../../api/appointments";
+} from "../../api/Appointments";
 
 function fmtRange(startIso: string, endIso: string) {
   const start = new Date(startIso);
@@ -28,6 +29,23 @@ function fmtRange(startIso: string, endIso: string) {
     });
     return `${fmt.format(start)} – ${fmt.format(end)}`;
   }
+}
+
+function toUtcIsoLocal(date: string, time: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const local = new Date(year, month - 1, day, hour, minute, 0, 0);
+  const utc = new Date(local.getTime() - local.getTimezoneOffset() * 60000);
+  return utc.toISOString();
+}
+
+function dateInputValueFromIso(iso: string) {
+  return new Date(iso).toISOString().slice(0, 10);
+}
+
+function timeInputValueFromIso(iso: string) {
+  const d = new Date(iso);
+  return d.toTimeString().slice(0, 5);
 }
 
 function toUtcStartOfDayIso(dateStr: string) {
@@ -60,6 +78,15 @@ function extractPatientAndDetails(notes?: string | null) {
   return { patient: patient || "-", details };
 }
 
+// 🔹 Try to pull just the treatment name out of details
+function treatmentNameFromDetails(details: string) {
+  if (!details) return "";
+  // e.g. "Treatment: Dental Check-up"
+  const m = details.match(/^Treatment:\s*(.+)$/i);
+  if (m) return m[1].trim();
+  return details;
+}
+
 export default function AdminAppointmentsPage() {
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [fromDate, setFromDate] = useState(todayIso);
@@ -69,6 +96,13 @@ export default function AdminAppointmentsPage() {
   const [items, setItems] = useState<AppointmentDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTreatment, setEditTreatment] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fromUtc = useMemo(() => toUtcStartOfDayIso(fromDate), [fromDate]);
   const toUtc = useMemo(() => toUtcEndOfDayIso(toDate), [toDate]);
@@ -89,6 +123,7 @@ export default function AdminAppointmentsPage() {
 
       const data = await adminListAppointments(params);
       setItems(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       setErr(e?.response?.data ?? "Kunne ikke laste avtaler.");
     } finally {
@@ -100,13 +135,70 @@ export default function AdminAppointmentsPage() {
     void refresh();
   }, [refresh]);
 
+  const startEditing = (appt: AppointmentDto) => {
+    setEditingId(appt.id);
+    setEditDate(dateInputValueFromIso(appt.startTime));
+    setEditStart(timeInputValueFromIso(appt.startTime));
+    setEditEnd(timeInputValueFromIso(appt.endTime));
+
+    const { details } = extractPatientAndDetails(appt.notes);
+    setEditTreatment(treatmentNameFromDetails(details));
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditDate("");
+    setEditStart("");
+    setEditEnd("");
+    setEditTreatment("");
+  };
+
+  const saveEdit = async (appt: AppointmentDto) => {
+    try {
+      setSaving(true);
+      const newStart = toUtcIsoLocal(editDate, editStart);
+      const newEnd = toUtcIsoLocal(editDate, editEnd);
+
+      // 🔹 Rebuild Notes: keep patient name, update treatment
+      const { patient } = extractPatientAndDetails(appt.notes);
+      const treatmentRaw = editTreatment.trim();
+
+      let notes: string;
+      if (treatmentRaw) {
+        const treatmentPart = treatmentRaw
+          .toLowerCase()
+          .startsWith("treatment:")
+          ? treatmentRaw
+          : `Treatment: ${treatmentRaw}`;
+        notes = `Patient: ${patient} – ${treatmentPart}`;
+      } else {
+        notes = `Patient: ${patient}`;
+      }
+
+      await adminUpdateAppointment(appt.id, {
+        startTime: newStart,
+        endTime: newEnd,
+        notes,
+      });
+
+      await refresh();
+      cancelEditing();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e: any) {
+      alert(e?.response?.data ?? "Kunne ikke oppdatere avtale.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="mx-auto max-w-5xl p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Alle avtaler</h1>
           <p className="text-sm text-zinc-600">
-            Administrasjonsoversikt over alle bookede timer.
+            Administrasjonsoversikt over alle bookede timer. Du kan endre
+            tidspunkt og behandling på eksisterende avtaler.
           </p>
         </div>
         <button
@@ -183,6 +275,9 @@ export default function AdminAppointmentsPage() {
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
                   Status
                 </th>
+                <th className="px-3 py-2 text-right font-medium text-zinc-700">
+                  Handlinger
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -190,6 +285,7 @@ export default function AdminAppointmentsPage() {
                 const { patient, details } = extractPatientAndDetails(
                   appt.notes
                 );
+                const treatmentName = treatmentNameFromDetails(details);
                 const lowerStatus = appt.status.toLowerCase();
 
                 const badgeColor =
@@ -199,15 +295,60 @@ export default function AdminAppointmentsPage() {
                     ? "bg-green-100 text-green-800"
                     : "bg-zinc-100 text-zinc-800";
 
+                const isEditing = editingId === appt.id;
+
                 return (
-                  <tr key={appt.id} className="hover:bg-zinc-50">
-                    <td className="px-3 py-2 whitespace-nowrap capitalize">
-                      {fmtRange(appt.startTime, appt.endTime)}
+                  <tr key={appt.id} className="hover:bg-zinc-50 align-top">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {isEditing ? (
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className="border rounded px-2 py-1 text-xs"
+                          />
+                          <div className="flex gap-1">
+                            <input
+                              type="time"
+                              value={editStart}
+                              onChange={(e) => setEditStart(e.target.value)}
+                              className="border rounded px-2 py-1 text-xs"
+                            />
+                            <span className="text-xs text-zinc-500 self-center">
+                              –
+                            </span>
+                            <input
+                              type="time"
+                              value={editEnd}
+                              onChange={(e) => setEditEnd(e.target.value)}
+                              className="border rounded px-2 py-1 text-xs"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="capitalize">
+                          {fmtRange(appt.startTime, appt.endTime)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 font-medium">{patient}</td>
                     <td className="px-3 py-2">
-                      {details || <span className="text-zinc-500">–</span>}
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editTreatment}
+                          onChange={(e) => setEditTreatment(e.target.value)}
+                          placeholder="F.eks. Root Canal"
+                          className="border rounded px-2 py-1 text-xs w-full"
+                        />
+                      ) : treatmentName ? (
+                        treatmentName
+                      ) : (
+                        <span className="text-zinc-500">–</span>
+                      )}
                     </td>
+
                     <td className="px-3 py-2">#{appt.providerId}</td>
                     <td className="px-3 py-2">
                       <span
@@ -215,6 +356,33 @@ export default function AdminAppointmentsPage() {
                       >
                         {appt.status}
                       </span>
+                    </td>
+
+                    <td className="px-3 py-2 text-right">
+                      {isEditing ? (
+                        <div className="inline-flex gap-2">
+                          <button
+                            onClick={() => saveEdit(appt)}
+                            disabled={saving}
+                            className="rounded px-2 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            {saving ? "Lagrer…" : "Lagre"}
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="rounded px-2 py-1 text-xs border hover:bg-zinc-50"
+                          >
+                            Avbryt
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditing(appt)}
+                          className="rounded px-2 py-1 text-xs border hover:bg-zinc-50"
+                        >
+                          Endre
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
