@@ -78,10 +78,8 @@ function extractPatientAndDetails(notes?: string | null) {
   return { patient: patient || "-", details };
 }
 
-// 🔹 Try to pull just the treatment name out of details
 function treatmentNameFromDetails(details: string) {
   if (!details) return "";
-  // e.g. "Treatment: Dental Check-up"
   const m = details.match(/^Treatment:\s*(.+)$/i);
   if (m) return m[1].trim();
   return details;
@@ -158,8 +156,6 @@ export default function AdminAppointmentsPage() {
       setSaving(true);
       const newStart = toUtcIsoLocal(editDate, editStart);
       const newEnd = toUtcIsoLocal(editDate, editEnd);
-
-      // 🔹 Rebuild Notes: keep patient name, update treatment
       const { patient } = extractPatientAndDetails(appt.notes);
       const treatmentRaw = editTreatment.trim();
 
@@ -195,10 +191,10 @@ export default function AdminAppointmentsPage() {
     <main className="mx-auto max-w-5xl p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Alle avtaler</h1>
+          <h1 className="text-2xl font-semibold">All Appointments</h1>
           <p className="text-sm text-zinc-600">
-            Administrasjonsoversikt over alle bookede timer. Du kan endre
-            tidspunkt og behandling på eksisterende avtaler.
+            Administrative overview of all booked appointments. You can change
+            the time and treatment for existing appointments.
           </p>
         </div>
         <button
@@ -213,7 +209,7 @@ export default function AdminAppointmentsPage() {
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1">
-              Fra dato
+              From Date
             </label>
             <input
               type="date"
@@ -224,7 +220,7 @@ export default function AdminAppointmentsPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1">
-              Til dato
+              To Date
             </label>
             <input
               type="date"
@@ -235,7 +231,7 @@ export default function AdminAppointmentsPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1">
-              Behandler-ID (valgfritt)
+              Provider-ID (Optional)
             </label>
             <input
               type="number"
@@ -248,11 +244,13 @@ export default function AdminAppointmentsPage() {
         </div>
       </section>
 
-      {loading && <p className="text-zinc-600">Laster avtaler…</p>}
+      {loading && <p className="text-zinc-600">Loading appointments...</p>}
       {err && <p className="text-red-600">{err}</p>}
 
       {!loading && !err && items.length === 0 && (
-        <p className="text-sm text-zinc-600">Ingen avtaler i valgt periode.</p>
+        <p className="text-sm text-zinc-600">
+          No appointments in the chosen window
+        </p>
       )}
 
       {!loading && !err && items.length > 0 && (
@@ -261,22 +259,22 @@ export default function AdminAppointmentsPage() {
             <thead className="bg-zinc-50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
-                  Tid
+                  Time
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
-                  Pasient
+                  Patient
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
-                  Behandling
+                  Treatment
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
-                  Behandler
+                  Provider
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-zinc-700">
                   Status
                 </th>
                 <th className="px-3 py-2 text-right font-medium text-zinc-700">
-                  Handlinger
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -372,7 +370,7 @@ export default function AdminAppointmentsPage() {
                             onClick={cancelEditing}
                             className="rounded px-2 py-1 text-xs border hover:bg-zinc-50"
                           >
-                            Avbryt
+                            Cancel
                           </button>
                         </div>
                       ) : (
@@ -380,7 +378,7 @@ export default function AdminAppointmentsPage() {
                           onClick={() => startEditing(appt)}
                           className="rounded px-2 py-1 text-xs border hover:bg-zinc-50"
                         >
-                          Endre
+                          Edit
                         </button>
                       )}
                     </td>

@@ -131,7 +131,7 @@ export default function BookingPage() {
   };
 
   if (!treatment) {
-    return <Navigate to="/behandlinger" replace />;
+    return <Navigate to="/treatments" replace />;
   }
 
   return (

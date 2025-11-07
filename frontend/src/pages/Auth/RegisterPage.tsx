@@ -38,34 +38,34 @@ export default function RegisterPage() {
 
   return (
     <main style={{ maxWidth: 360, margin: "10vh auto" }}>
-      <h1>Registrer</h1>
+      <h1>Register</h1>
       <form onSubmit={onSubmit}>
-        <label>Fornavn</label>
+        <label>First Name</label>
         <input
           value={firstName}
           onChange={(event) => setFirstName(event.target.value)}
         />
 
-        <label>Etternavn</label>
+        <label>Last Name</label>
         <input
           value={lastName}
           onChange={(event) => setLastName(event.target.value)}
         />
 
-        <label>Telefon</label>
+        <label>Phone</label>
         <input
           value={phoneNumber}
           onChange={(event) => setPhoneNumber(event.target.value)}
         />
 
-        <label>E-post</label>
+        <label>Email</label>
         <input
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
         />
 
-        <label>Passord</label>
+        <label>Password</label>
         <input
           type="password"
           value={password}
@@ -74,11 +74,11 @@ export default function RegisterPage() {
         />
 
         <button type="submit" disabled={loading}>
-          {loading ? "Oppretter..." : "Opprett konto"}
+          {loading ? "Creating..." : "Create Account"}
         </button>
       </form>
       <p>
-        Har konto? <Link to="/login">Logg inn</Link>
+        Already got an account? <Link to="/login">Logg inn</Link>
       </p>
     </main>
   );
