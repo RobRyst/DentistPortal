@@ -11,12 +11,15 @@ namespace backend.DTOs
 
     public class CreateIssueItemRequest
     {
-        [Required, StringLength(200)]  public string Issue { get; set; } = "";
-        [Required, StringLength(1000)] public string Answer { get; set; } = "";
+        [Required, StringLength(200)]
+        public string Issue { get; set; } = "";
+        [Required, StringLength(1000)]
+        public string Answer { get; set; } = "";
     }
 
     public class UpdateIssueItemRequest : CreateIssueItemRequest
     {
-        [Required] public int Id { get; set; }
+        [Required]
+        public int Id { get; set; }
     }
 }

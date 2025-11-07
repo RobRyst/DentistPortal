@@ -42,7 +42,7 @@ const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
-      { path: "behandlinger", element: <TreatmentsPage /> },
+      { path: "treatments", element: <TreatmentsPage /> },
     ],
   },
 ]);

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { env } from "./env";
+import { env } from "./Env";
 
 export type LoginStartRequest = { email: string; password: string };
 export type LoginStartResponse = {

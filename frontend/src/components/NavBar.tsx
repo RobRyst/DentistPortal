@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { tokenStorage } from "../api/token";
+import { tokenStorage } from "../api/Token";
 import NotificationBell from "./NotificationBell";
 import { jwtDecode } from "jwt-decode";
 
@@ -80,14 +80,14 @@ export default function NavBar() {
       <nav className="mx-auto max-w-6xl px-4">
         <div className="flex h-14 items-center justify-between">
           <Link to="/" className="font-semibold text-lg">
-            RystDentist
+            RystDental
           </Link>
 
           <div className="flex items-center gap-2">
             <NotificationBell />
 
             <NavLink
-              to="/behandlinger"
+              to="/treatments"
               className={({ isActive }) =>
                 `${linkBase} ${isActive ? linkActive : linkInactive}`
               }

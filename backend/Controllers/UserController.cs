@@ -33,7 +33,7 @@ namespace backend.Controllers
                 LastName = user.LastName,
                 PhoneNumber = user.PhoneNumber,
                 Address = user.Address,
-                Roles = roles.ToArray()
+                Roles = [.. roles]
             };
         }
 

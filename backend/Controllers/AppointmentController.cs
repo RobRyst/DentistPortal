@@ -350,7 +350,7 @@ namespace backend.Controllers
             _db.Notifications.Add(new Notification
             {
                 UserId = appointment.UserId,
-                Message = $"Du har fått tildelt time {appointment.StartTime:u}"
+                Message = $"You've got an appointment at: {appointment.StartTime:u}"
             });
             await _db.SaveChangesAsync();
 

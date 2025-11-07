@@ -50,16 +50,16 @@ namespace backend.Services
 
                         var localStart = TimeZoneInfo.ConvertTimeFromUtc(appointment.StartTime, osloTz);
 
-                        var subject = "Påminnelse om time hos RystDentist";
+                        var subject = "Reminder about an appointment at RystDental";
                         var name = string.IsNullOrWhiteSpace(user.FirstName)
                             ? (user.Email ?? "")
                             : user.FirstName;
 
                         var text =
-                            $"Hei {name}!\n\n" +
-                            $"Dette er en påminnelse om at du har time hos RystDentist " +
-                            $"den {localStart:dddd dd.MM.yyyy} kl. {localStart:HH:mm}.\n\n" +
-                            "Hvis du ikke kan møte opp, vennligst ta kontakt med oss så snart som mulig.";
+                            $"Hello {name}!\n\n" +
+                            $"Reminder about an appointment at RystDental " +
+                            $"Date: {localStart:dddd dd.MM.yyyy} at {localStart:HH:mm}.\n\n" +
+                            "If you can't make it, pleace contact Rystdental as soon as possible";
 
                         if (!string.IsNullOrWhiteSpace(user.Email))
                         {
@@ -69,14 +69,14 @@ namespace backend.Services
                             }
                             catch (Exception ex)
                             {
-                                _log.LogWarning(ex, "Kunne ikke sende påminnelse til {Email}", user.Email);
+                                _log.LogWarning(ex, "Couldn't send to {Email}", user.Email);
                             }
                         }
 
                         db.Notifications.Add(new Notification
                         {
                             UserId = appointment.UserId,
-                            Message = $"Påminnelse: Du har time i morgen {localStart:dddd dd.MM.yyyy HH:mm}."
+                            Message = $"Reminder: Your appointment starts at {localStart:dddd dd.MM.yyyy HH:mm}."
                         });
 
                         appointment.Reminder24hSent = true;
@@ -89,7 +89,7 @@ namespace backend.Services
                 }
                 catch (Exception ex)
                 {
-                    _log.LogError(ex, "Feil under sending av timepåminnelser");
+                    _log.LogError(ex, "Error during sending reminder");
                 }
 
                 try

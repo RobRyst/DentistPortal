@@ -14,7 +14,9 @@ namespace backend.Domains.Entities
 
     public class Verify2FARequest
     {
-        [Required] public string UserId { get; set; } = "";
-        [Required, StringLength(6, MinimumLength = 6)] public string Code { get; set; } = "";
+        [Required]
+        public string UserId { get; set; } = "";
+        [Required, StringLength(6, MinimumLength = 6)]
+        public string Code { get; set; } = "";
     }
 }
