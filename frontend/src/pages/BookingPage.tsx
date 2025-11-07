@@ -47,7 +47,7 @@ export default function BookingPage() {
   const [startDate, setStartDate] = useState<DateTime>(() =>
     DateTime.now().setZone(OSLO).startOf("day")
   );
-  const [days, setDays] = useState(14);
+  const [days, setDays] = useState(2);
   const [slots, setSlots] = useState<
     Array<{ id: number; startTime: string; endTime: string }>
   >([]);
