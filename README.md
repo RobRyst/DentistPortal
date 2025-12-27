@@ -23,8 +23,8 @@ The project implements:
 ⏰ Automated appointment reminders (24h before)
 💬 Integrated chatbot for user assistance
 
-🚀 Tech Stack
-⚙️ Application Stack
+## 🚀 Tech Stack
+## ⚙️ Application Stack
 
 - React – Frontend web application
 - TypeScript – Type-safe frontend development
@@ -32,31 +32,31 @@ The project implements:
 - Entity Framework Core – Data access layer
 - MySQL – Relational database
 
-🔐 Authentication & Authorization
+## 🔐 Authentication & Authorization
 
 - ASP.NET Identity
 - JWT (JSON Web Tokens)
 - Role-based access control (Admin / Provider / Patient)
 
-🎨 UI & Styling
+## 🎨 UI & Styling
 
 - Tailwind CSS – Utility-first styling
 - Responsive layout for desktop and mobile
 - Custom admin interfaces for data management
 
-🔔 Notifications & Automation
+## 🔔 Notifications & Automation
 
 - .NET BackgroundService – Scheduled reminder jobs
 - Email notifications via SMTP
 - In-app notification system
 
-💬 External Integrations
+## 💬 External Integrations
 
 - Noupe Chatbot – Embedded user support assistant
 - Swagger – API documentation and testing
 
-✨ Features
-📅 Appointment Management
+## ✨ Features
+## 📅 Appointment Management
 
 Patients can:
 
@@ -66,7 +66,7 @@ Patients can:
 - Prevents overlapping or invalid bookings
 - UTC-safe time handling with local display
 
-🛠️ Admin & Provider Panel
+## 🛠️ Admin & Provider Panel
 
 - View all booked appointments across users
 - Filter appointments by date and provider
@@ -78,7 +78,7 @@ Edit:
 - Cancel or update existing appointments
 - Manage availability slots
 
-⏰ Automated Reminders
+## ⏰ Automated Reminders
 
 - Background job checks upcoming appointments
 
@@ -91,13 +91,13 @@ Delivered via:
 - In-app notification
 - Each reminder is sent once per appointment
 
-💬 Chatbot Assistance
+## 💬 Chatbot Assistance
 
 - Embedded chatbot for user guidance
 - Styled to match application branding
 - Helps users navigate booking and information
 
-🧱 Architecture
+## 🧱 Architecture
 
 - Frontend and backend separated by REST API
   
@@ -111,7 +111,7 @@ Backend structured by:
 - Background services operate independently of HTTP requests
 - The architecture is designed to resemble a real production system, with clear separation of concerns and scalable patterns.
 
-🧠 What I Learned
+## 🧠 What I Learned
 
 - Full-stack application design from database to UI
 - Secure authentication and authorization using ASP.NET Identity and JWT
@@ -121,7 +121,7 @@ Backend structured by:
 - Integrating and configuring third-party widgets safely
 - Coordinating frontend and backend state changes reliably
 
-📄 Documentation Included
+## 📄 Documentation Included
 
 - API documentation via Swagger
 - Database schema via Entity Framework migrations
